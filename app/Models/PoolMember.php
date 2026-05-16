@@ -16,6 +16,7 @@ class PoolMember extends Model
         'share_percentage',
         'cost_share',
         'cost_paid',
+        'payment_method',
         'joined_at',
     ];
 

@@ -7,6 +7,7 @@ use App\Models\PoolMember;
 use App\Models\TransportRequest;
 use App\Models\Notification;
 use Illuminate\Support\Str;
+use App\Data\DistrictData;
 
 class PoolMatchingService
 {
@@ -23,17 +24,25 @@ class PoolMatchingService
     {
         return Pool::where('status', 'open')
             ->where(function ($q) use ($request) {
-                $q->where('destination_market', 'like',
-                      '%' . $request->destination_district . '%')
-                  ->orWhere('pickup_region', 'like',
-                      '%' . $request->pickup_district . '%');
+                $q->where(
+                    'destination_market',
+                    'like',
+                    '%' . $request->destination_district . '%'
+                )
+                    ->orWhere(
+                        'pickup_region',
+                        'like',
+                        '%' . $request->pickup_district . '%'
+                    );
             })
             ->whereBetween('pickup_date', [
                 $request->preferred_pickup_date->copy()->subDay(),
                 $request->preferred_pickup_date->copy()->addDay(),
             ])
-            ->whereRaw('(total_capacity_kg - used_capacity_kg) >= ?',
-                [$request->quantity_kg])
+            ->whereRaw(
+                '(total_capacity_kg - used_capacity_kg) >= ?',
+                [$request->quantity_kg]
+            )
             ->whereNull('driver_id')
             ->first();
     }
@@ -44,10 +53,10 @@ class PoolMatchingService
     public function joinPool(Pool $pool, TransportRequest $request): void
     {
         PoolMember::create([
-            'pool_id'              => $pool->id,
+            'pool_id' => $pool->id,
             'transport_request_id' => $request->id,
-            'user_id'              => $request->user_id,
-            'joined_at'            => now(),
+            'user_id' => $request->user_id,
+            'joined_at' => now(),
         ]);
 
         $pool->increment('used_capacity_kg', $request->quantity_kg);
@@ -67,32 +76,35 @@ class PoolMatchingService
      */
     public function goSolo(TransportRequest $request): Pool
     {
-        // Create a private pool locked to this farmer only
+        $truckCost = DistrictData::calculateTruckCost(
+            $request->pickup_district,
+            $request->destination_district
+        );
+
         $pool = Pool::create([
-            'pool_code'         => 'SOLO-' . strtoupper(Str::random(8)),
-            'destination_market'=> $request->destination_market,
-            'pickup_region'     => $request->pickup_district,
-            'pickup_date'       => $request->preferred_pickup_date,
-            'total_capacity_kg' => self::TRUCK_CAPACITY_KG,
-            'used_capacity_kg'  => $request->quantity_kg,
-            'total_cost'        => self::FULL_TRUCK_COST,
-            'max_farmers'       => 1, // solo — no one else can join
-            'status'            => 'open',
-            'driver_id'         => null,
+            'pool_code' => 'SOLO-' . strtoupper(Str::random(8)),
+            'destination_market' => $request->destination_market,
+            'pickup_region' => $request->pickup_district,
+            'pickup_date' => $request->preferred_pickup_date,
+            'total_capacity_kg' => DistrictData::TRUCK_CAPACITY_TONNES * 1000,
+            'used_capacity_kg' => $request->quantity_kg,
+            'total_cost' => $truckCost,
+            'max_farmers' => 1,
+            'status' => 'open',
+            'driver_id' => null,
         ]);
 
         PoolMember::create([
-            'pool_id'              => $pool->id,
+            'pool_id' => $pool->id,
             'transport_request_id' => $request->id,
-            'user_id'              => $request->user_id,
-            'share_percentage'     => 100.00,
-            'cost_share'           => self::FULL_TRUCK_COST,
-            'joined_at'            => now(),
+            'user_id' => $request->user_id,
+            'share_percentage' => 100.00,
+            'cost_share' => $truckCost,
+            'joined_at' => now(),
         ]);
 
         $request->update(['status' => 'pooled']);
         $this->notifyFarmer($pool, $request, 'solo');
-
         return $pool;
     }
 
@@ -102,31 +114,57 @@ class PoolMatchingService
      */
     public function createNewPool(TransportRequest $request): Pool
     {
+        $truckCost = DistrictData::calculateTruckCost(
+            $request->pickup_district,
+            $request->destination_district
+        );
+
         $pool = Pool::create([
-            'pool_code'         => 'POOL-' . strtoupper(Str::random(8)),
-            'destination_market'=> $request->destination_market,
-            'pickup_region'     => $request->pickup_district,
-            'pickup_date'       => $request->preferred_pickup_date,
-            'total_capacity_kg' => self::TRUCK_CAPACITY_KG,
-            'used_capacity_kg'  => $request->quantity_kg,
-            'total_cost'        => self::FULL_TRUCK_COST,
-            'max_farmers'       => 5,
-            'status'            => 'open',
-            'driver_id'         => null,
+            'pool_code' => 'POOL-' . strtoupper(Str::random(8)),
+            'destination_market' => $request->destination_market,
+            'pickup_region' => $request->pickup_district,
+            'pickup_date' => $request->preferred_pickup_date,
+            'total_capacity_kg' => DistrictData::TRUCK_CAPACITY_TONNES * 1000,
+            'used_capacity_kg' => $request->quantity_kg,
+            'total_cost' => $truckCost,
+            'max_farmers' => 5,
+            'status' => 'open',
+            'driver_id' => null,
         ]);
 
         PoolMember::create([
-            'pool_id'              => $pool->id,
+            'pool_id' => $pool->id,
             'transport_request_id' => $request->id,
-            'user_id'              => $request->user_id,
-            'joined_at'            => now(),
+            'user_id' => $request->user_id,
+            'joined_at' => now(),
         ]);
 
         $request->update(['status' => 'pooled']);
         $this->recalculateCostShares($pool);
         $this->notifyFarmer($pool, $request, 'new');
-
         return $pool;
+    }
+
+    private function createPool(TransportRequest $request): Pool
+    {
+        // Calculate cost based on actual distance
+        $truckCost = DistrictData::calculateTruckCost(
+            $request->pickup_district,
+            $request->destination_district
+        );
+
+        return Pool::create([
+            'pool_code' => 'POOL-' . strtoupper(Str::random(8)),
+            'destination_market' => $request->destination_market,
+            'pickup_region' => $request->pickup_district,
+            'pickup_date' => $request->preferred_pickup_date,
+            'total_capacity_kg' => DistrictData::TRUCK_CAPACITY_TONNES * 1000,
+            'used_capacity_kg' => 0,
+            'total_cost' => $truckCost,
+            'max_farmers' => 5,
+            'status' => 'open',
+            'driver_id' => null,
+        ]);
     }
 
     /**
@@ -144,17 +182,19 @@ class PoolMatchingService
         }
 
         foreach ($pool->members as $member) {
-            $farmerKg     = $member->transportRequest->quantity_kg ?? 0;
+            $farmerKg = $member->transportRequest->quantity_kg ?? 0;
             $sharePercent = round(
-                ($farmerKg / $pool->used_capacity_kg) * 100, 2
+                ($farmerKg / $pool->used_capacity_kg) * 100,
+                2
             );
-            $costShare    = round(
-                ($sharePercent / 100) * $pool->total_cost, 2
+            $costShare = round(
+                ($sharePercent / 100) * $pool->total_cost,
+                2
             );
 
             $member->update([
                 'share_percentage' => $sharePercent,
-                'cost_share'       => $costShare,
+                'cost_share' => $costShare,
             ]);
         }
     }
@@ -165,14 +205,14 @@ class PoolMatchingService
      */
     public function calculateSharedCost(Pool $pool, float $farmerKg): array
     {
-        $newUsed      = $pool->used_capacity_kg + $farmerKg;
+        $newUsed = $pool->used_capacity_kg + $farmerKg;
         $sharePercent = round(($farmerKg / $newUsed) * 100, 2);
-        $cost         = round(($sharePercent / 100) * $pool->total_cost, 2);
+        $cost = round(($sharePercent / 100) * $pool->total_cost, 2);
 
         return [
             'share_percent' => $sharePercent,
-            'cost'          => $cost,
-            'saving'        => round($pool->total_cost - $cost, 2),
+            'cost' => $cost,
+            'saving' => round($pool->total_cost - $cost, 2),
         ];
     }
 
@@ -183,25 +223,25 @@ class PoolMatchingService
     ): void {
         $messages = [
             'shared' => 'You joined a shared pool going to '
-                        . $pool->destination_market
-                        . '. A driver will be assigned soon.',
-            'solo'   => 'Your solo transport pool has been created for '
-                        . $request->crop_type . ' going to '
-                        . $request->destination_market
-                        . '. Full truck reserved for you.',
-            'new'    => 'A new pool has been created for your '
-                        . $request->crop_type
-                        . '. Waiting for more farmers or a driver.',
+                . $pool->destination_market
+                . '. A driver will be assigned soon.',
+            'solo' => 'Your solo transport pool has been created for '
+                . $request->crop_type . ' going to '
+                . $request->destination_market
+                . '. Full truck reserved for you.',
+            'new' => 'A new pool has been created for your '
+                . $request->crop_type
+                . '. Waiting for more farmers or a driver.',
         ];
 
         Notification::create([
             'user_id' => $request->user_id,
-            'title'   => $type === 'solo'
+            'title' => $type === 'solo'
                 ? '🚛 Solo Transport Booked'
                 : '🤝 Pool Created / Matched',
             'message' => $messages[$type],
-            'type'    => 'pool_matched',
-            'link'    => '/farmer/requests/' . $request->id,
+            'type' => 'pool_matched',
+            'link' => '/farmer/requests/' . $request->id,
         ]);
     }
 }

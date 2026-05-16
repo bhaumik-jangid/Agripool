@@ -89,24 +89,40 @@
     {{-- Password --}}
     <div class="mb-3">
         <label class="form-label fw-semibold">Password</label>
-        <input type="password"
-               name="password"
-               class="form-control @error('password') is-invalid @enderror"
-               placeholder="Min. 8 characters"
-               required>
-        @error('password')
-            <div class="invalid-feedback">{{ $message }}</div>
-        @enderror
+        <div class="input-group">
+            <input type="password"
+                name="password"
+                id="regPassword"
+                class="form-control @error('password') is-invalid @enderror"
+                placeholder="Min. 8 characters"
+                required>
+            <button class="btn btn-outline-secondary" type="button"
+                    onclick="togglePassword('regPassword', this)"
+                    style="border-radius:0 8px 8px 0;">
+                👁
+            </button>
+            @error('password')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
     </div>
 
     {{-- Confirm Password --}}
     <div class="mb-4">
         <label class="form-label fw-semibold">Confirm Password</label>
-        <input type="password"
-               name="password_confirmation"
-               class="form-control"
-               placeholder="Repeat password"
-               required>
+        <div class="input-group">
+            <input type="password"
+                name="password_confirmation"
+                id="regPasswordConfirm"
+                class="form-control"
+                placeholder="Repeat password"
+                required>
+            <button class="btn btn-outline-secondary" type="button"
+                    onclick="togglePassword('regPasswordConfirm', this)"
+                    style="border-radius:0 8px 8px 0;">
+                👁
+            </button>
+        </div>
     </div>
 
     {{-- Submit --}}
@@ -125,5 +141,20 @@
            style="color: #2d6a4f;">Sign In</a>
     </small>
 </div>
+
+@push('scripts')
+<script>
+function togglePassword(id, btn) {
+    const input = document.getElementById(id);
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+    } else {
+        input.type = 'password';
+        btn.textContent = '👁';
+    }
+}
+</script>
+@endpush
 
 @endsection

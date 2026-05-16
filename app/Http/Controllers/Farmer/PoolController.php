@@ -6,28 +6,30 @@ use App\Http\Controllers\Controller;
 use App\Models\Pool;
 use App\Models\PoolMember;
 use App\Models\TransportRequest;
+use App\Services\PoolMatchingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class PoolController extends Controller
 {
-    // Browse available pools that this farmer can join
     public function index()
     {
         $user = Auth::user();
 
-        // Get farmer's pending requests (only pending requests can join a pool)
+        // Show pending requests (not yet in any pool)
         $myPendingRequests = TransportRequest::where('user_id', $user->id)
                                 ->where('status', 'pending')
                                 ->get();
 
-        // Get open pools — ordered by pickup date
+        // Show all open pools with at least one member
         $pools = Pool::where('status', 'open')
                      ->where('pickup_date', '>=', now()->toDateString())
+                     ->whereHas('members')
+                     ->whereNull('driver_id')
                      ->orderBy('pickup_date', 'asc')
                      ->paginate(9);
 
-        // Get pools the farmer has already joined
+        // Pools this farmer has already joined
         $myPoolIds = PoolMember::where('user_id', $user->id)
                                ->pluck('pool_id')
                                ->toArray();
@@ -39,38 +41,38 @@ class PoolController extends Controller
         ));
     }
 
-    // Join a pool with a specific transport request
     public function join(Request $request, Pool $pool)
     {
         $request->validate([
             'transport_request_id' => ['required', 'exists:transport_requests,id'],
         ]);
 
-        $transportRequest = TransportRequest::findOrFail($request->transport_request_id);
+        $transportRequest = TransportRequest::findOrFail(
+            $request->transport_request_id
+        );
 
-        // Security checks
         if ($transportRequest->user_id !== Auth::id()) {
             abort(403);
         }
 
         if (!$pool->isOpen()) {
-            return back()->with('error', 'This pool is no longer accepting members.');
+            return back()->with('error', 'This pool is no longer open.');
         }
 
-        // Check if farmer already joined this pool
         $alreadyJoined = PoolMember::where('pool_id', $pool->id)
                                    ->where('user_id', Auth::id())
                                    ->exists();
         if ($alreadyJoined) {
-            return back()->with('error', 'You have already joined this pool.');
+            return back()->with('error', 'You are already in this pool.');
         }
 
-        // Check capacity
         if ($pool->availableCapacity() < $transportRequest->quantity_kg) {
-            return back()->with('error', 'Not enough space in this pool for your cargo.');
+            return back()->with('error',
+                'Not enough space in this pool for your cargo ('
+                . number_format($transportRequest->quantity_kg) . 'kg needed, '
+                . number_format($pool->availableCapacity()) . 'kg available).');
         }
 
-        // Add farmer to pool
         PoolMember::create([
             'pool_id'              => $pool->id,
             'transport_request_id' => $transportRequest->id,
@@ -78,43 +80,48 @@ class PoolController extends Controller
             'joined_at'            => now(),
         ]);
 
-        // Update pool used capacity
         $pool->increment('used_capacity_kg', $transportRequest->quantity_kg);
-
-        // Update request status to pooled
         $transportRequest->update(['status' => 'pooled']);
 
-        // Check if pool is now full
         if ($pool->members()->count() >= $pool->max_farmers) {
             $pool->update(['status' => 'full']);
         }
 
+        // Recalculate cost shares
+        $service = new PoolMatchingService();
+        $service->recalculateCostShares($pool);
+
         return back()->with('success', 'Successfully joined the pool!');
     }
 
-    // Leave a pool
     public function leave(Request $request, Pool $pool)
     {
         $member = PoolMember::where('pool_id', $pool->id)
                             ->where('user_id', Auth::id())
                             ->firstOrFail();
 
-        $transportRequest = TransportRequest::find($member->transport_request_id);
+        $transportRequest = TransportRequest::find(
+            $member->transport_request_id
+        );
 
-        // Remove from pool
         $member->delete();
 
-        // Restore capacity
         if ($transportRequest) {
             $pool->decrement('used_capacity_kg', $transportRequest->quantity_kg);
+            // Set back to pending so farmer can rejoin or create new pool
             $transportRequest->update(['status' => 'pending']);
         }
 
-        // Re-open pool if it was full
         if ($pool->status === 'full') {
             $pool->update(['status' => 'open']);
         }
 
-        return back()->with('success', 'You have left the pool.');
+        // Recalculate remaining members' shares
+        $service = new PoolMatchingService();
+        $service->recalculateCostShares($pool);
+
+        return back()->with('success',
+            'You have left the pool. Your request is now pending — '
+            . 'you can rejoin a pool or create a new one.');
     }
 }

@@ -86,10 +86,19 @@
 
                 <div class="col-md-6">
                     <label class="form-label fw-semibold small">Pickup District *</label>
-                    <input type="text" name="pickup_district"
-                           class="form-control @error('pickup_district') is-invalid @enderror"
-                           value="{{ old('pickup_district') }}"
-                           placeholder="e.g. Anand">
+                    <select name="pickup_district"
+                            class="form-select
+                                @error('pickup_district') is-invalid @enderror"
+                            id="pickupDistrict"
+                            onchange="updateCostEstimate()">
+                        <option value="">Select district</option>
+                        @foreach(\App\Data\DistrictData::getDistrictNames() as $d)
+                            <option value="{{ $d }}"
+                                {{ old('pickup_district') == $d ? 'selected' : '' }}>
+                                {{ $d }}
+                            </option>
+                        @endforeach
+                    </select>
                     @error('pickup_district')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -149,22 +158,36 @@
             <div class="row g-3">
 
                 <div class="col-md-8">
-                    <label class="form-label fw-semibold small">Market Name / Location *</label>
+                    <label class="form-label fw-semibold small">
+                        Market Name / Location *
+                    </label>
                     <input type="text" name="destination_market"
-                           class="form-control @error('destination_market') is-invalid @enderror"
-                           value="{{ old('destination_market') }}"
-                           placeholder="e.g. Ahmedabad APMC Market">
+                        class="form-control
+                                @error('destination_market') is-invalid @enderror"
+                        value="{{ old('destination_market') }}"
+                        placeholder="e.g. Ahmedabad APMC Market, Surat Sabji Market">
                     @error('destination_market')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold small">Destination District *</label>
-                    <input type="text" name="destination_district"
-                           class="form-control @error('destination_district') is-invalid @enderror"
-                           value="{{ old('destination_district') }}"
-                           placeholder="e.g. Ahmedabad">
+                    <label class="form-label fw-semibold small">
+                        Destination District *
+                    </label>
+                    <select name="destination_district"
+                            class="form-select
+                                @error('destination_district') is-invalid @enderror"
+                            id="destinationDistrict"
+                            onchange="updateCostEstimate()">
+                        <option value="">Select district</option>
+                        @foreach(\App\Data\DistrictData::getDistrictNames() as $d)
+                            <option value="{{ $d }}"
+                                {{ old('destination_district') == $d ? 'selected' : '' }}>
+                                {{ $d }}
+                            </option>
+                        @endforeach
+                    </select>
                     @error('destination_district')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -182,6 +205,32 @@
             @error('special_instructions')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
+        </div>
+
+        {{-- Live cost estimate --}}
+        <div id="costEstimateBox" class="mb-4 p-4 rounded-3"
+            style="background:#f0faf4;border:1px solid #c3e6cb;display:none;">
+            <h6 class="fw-bold mb-2" style="color:#2d6a4f;">
+                💰 Estimated Transport Cost
+            </h6>
+            <div class="row g-3">
+                <div class="col-md-4 text-center">
+                    <div style="font-size:.78rem;color:#888;">Distance</div>
+                    <div class="fw-bold" id="estDistance" style="color:#2d6a4f;">—</div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div style="font-size:.78rem;color:#888;">Full Truck Cost</div>
+                    <div class="fw-bold" id="estFullCost" style="color:#2d6a4f;">—</div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div style="font-size:.78rem;color:#888;">If You Share (50%)</div>
+                    <div class="fw-bold" id="estSharedCost"
+                        style="color:#52b788;">—</div>
+                </div>
+            </div>
+            <div class="mt-2 small text-muted text-center">
+                ₹12/km/tonne · 5-tonne truck · Actual cost calculated at matching
+            </div>
         </div>
 
         {{-- Submit --}}
@@ -202,5 +251,54 @@
 </div>
 </div>
 </div>
+
+@push('scripts')
+<script>
+// District coordinates for client-side distance calculation
+const districts = @json(\App\Data\DistrictData::$districts);
+const RATE = 12.0;
+const TRUCK_TONNES = 5.0;
+
+function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2)
+            + Math.cos(lat1 * Math.PI/180)
+            * Math.cos(lat2 * Math.PI/180)
+            * Math.sin(dLon/2) * Math.sin(dLon/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function updateCostEstimate() {
+    const from = document.getElementById('pickupDistrict').value;
+    const to   = document.getElementById('destinationDistrict').value;
+
+    if (!from || !to || from === to) {
+        document.getElementById('costEstimateBox').style.display = 'none';
+        return;
+    }
+
+    if (!districts[from] || !districts[to]) return;
+
+    const dist = haversine(
+        districts[from].lat, districts[from].lng,
+        districts[to].lat,   districts[to].lng
+    );
+
+    const fullCost   = Math.max(dist * TRUCK_TONNES * RATE, 500);
+    const sharedCost = fullCost * 0.5;
+
+    document.getElementById('estDistance').textContent =
+        Math.round(dist) + ' km';
+    document.getElementById('estFullCost').textContent =
+        '₹' + fullCost.toFixed(0);
+    document.getElementById('estSharedCost').textContent =
+        '₹' + sharedCost.toFixed(0) + ' (est.)';
+
+    document.getElementById('costEstimateBox').style.display = 'block';
+}
+</script>
+@endpush
 
 @endsection

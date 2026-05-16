@@ -233,4 +233,103 @@ class TransportRequestController extends Controller
         return redirect()->route('farmer.requests.index')
             ->with('success', 'Request cancelled successfully.');
     }
+
+    // Re-trigger auto matching for a pending request
+    public function autoPool(Request $request)
+    {
+        $request->validate([
+            'request_id' => ['required', 'exists:transport_requests,id'],
+        ]);
+
+        $transportRequest = TransportRequest::findOrFail($request->request_id);
+
+        if ($transportRequest->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        if ($transportRequest->status !== 'pending') {
+            return back()->with(
+                'error',
+                'Only pending requests can be auto-matched.'
+            );
+        }
+
+        $matchingService = new PoolMatchingService();
+        $matchingPool = $matchingService->findMatch($transportRequest);
+
+        if ($matchingPool) {
+            $costInfo = $matchingService->calculateSharedCost(
+                $matchingPool,
+                $transportRequest->quantity_kg
+            );
+
+            session([
+                'pool_match' => [
+                    'request_id' => $transportRequest->id,
+                    'pool_id' => $matchingPool->id,
+                    'pool_code' => $matchingPool->pool_code,
+                    'destination' => $matchingPool->destination_market,
+                    'pickup_date' => $matchingPool->pickup_date->format('d M Y'),
+                    'farmers_count' => $matchingPool->members()->count(),
+                    'shared_cost' => $costInfo['cost'],
+                    'saving' => $costInfo['saving'],
+                    'full_cost' => $matchingPool->total_cost,
+                    'share_percent' => $costInfo['share_percent'],
+                    'farmer_kg' => $transportRequest->quantity_kg,
+                    'pool_used_kg' => $matchingPool->used_capacity_kg,
+                ]
+            ]);
+
+            return redirect()->route('farmer.requests.confirm');
+        }
+
+        // No match — create a new pool
+        $matchingService->createNewPool($transportRequest);
+
+        return redirect()->route('farmer.requests.index')
+            ->with(
+                'success',
+                'A new pool has been created for your request!'
+            );
+    }
+
+    public function pay(Request $request, TransportRequest $transportRequest)
+    {
+        if ($transportRequest->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'payment_method' => ['required', 'string'],
+        ]);
+
+        $poolMember = $transportRequest->poolMember;
+
+        if (!$poolMember) {
+            return back()->with('error', 'No pool membership found.');
+        }
+
+        $poolMember->update([
+            'cost_paid' => true,
+            'payment_method' => $request->payment_method,
+        ]);
+
+        // Update driver's earning record to paid
+        if ($poolMember->pool && $poolMember->pool->shipment) {
+            \App\Models\Earning::where(
+                'shipment_id',
+                $poolMember->pool->shipment->id
+            )->update([
+                        'status' => 'paid',
+                        'paid_at' => now(),
+                    ]);
+        }
+
+        return back()->with(
+            'success',
+            '✅ Payment of ₹'
+            . number_format($poolMember->cost_share, 2)
+            . ' confirmed via ' . $request->payment_method . '!'
+        );
+    }
 }

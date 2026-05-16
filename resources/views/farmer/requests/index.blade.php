@@ -73,11 +73,13 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <div class="d-flex gap-1">
+                                    <div class="d-flex gap-1 flex-wrap">
+
                                         <a href="{{ route('farmer.requests.show', $req) }}" class="btn btn-sm btn-outline-secondary"
                                             style="border-radius:8px;font-size:.75rem;">
                                             View
                                         </a>
+
                                         @if($req->isEditable())
                                             <a href="{{ route('farmer.requests.edit', $req) }}" class="btn btn-sm btn-outline-primary"
                                                 style="border-radius:8px;font-size:.75rem;">
@@ -93,6 +95,24 @@
                                                 </button>
                                             </form>
                                         @endif
+
+                                        {{-- If request is pending (left a pool or never matched) --}}
+                                        @if($req->status === 'pending')
+                                                    <a href="{{ route('farmer.pools.index') }}" class="btn btn-sm" style="background:#2d6a4f;color:#fff;
+                                              border-radius:8px;font-size:.75rem;">
+                                                        🤝 Join Pool
+                                                    </a>
+                                                    <form method="POST" action="{{ route('farmer.requests.autopool') }}" onsubmit="return confirm(
+                                              'Auto-match this request to a pool?')">
+                                                        @csrf
+                                                        <input type="hidden" name="request_id" value="{{ $req->id }}">
+                                                        <button type="submit" class="btn btn-sm btn-outline-success"
+                                                            style="border-radius:8px;font-size:.75rem;">
+                                                            🔄 Auto Match
+                                                        </button>
+                                                    </form>
+                                        @endif
+
                                     </div>
                                 </td>
                             </tr>
