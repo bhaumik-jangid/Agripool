@@ -1,0 +1,36 @@
+/* AgriPool Global Styles */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+}
+
+/* Custom AgriPool color palette */
+:root {
+    --agripool-green: #2d6a4f;
+    --agripool-light-green: #52b788;
+    --agripool-yellow: #f4a261;
+    --agripool-dark: #1b1b1b;
+    --agripool-light: #f8f9fa;
+}
+
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: var(--agripool-green) !important;
+}
+
+.btn-agripool {
+    background-color: var(--agripool-green);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-weight: 600;
+}
+
+.btn-agripool:hover {
+    background-color: var(--agripool-light-green);
+    color: white;
+}
