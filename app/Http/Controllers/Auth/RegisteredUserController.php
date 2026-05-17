@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+use App\Mail\WelcomeMail;
+use Illuminate\Support\Facades\Mail;
 
 class RegisteredUserController extends Controller
 {
@@ -67,6 +69,14 @@ class RegisteredUserController extends Controller
 
         // Log the user in immediately after registration
         Auth::login($user);
+
+        // Send welcome email
+        try {
+            Mail::to($user->email)->send(new WelcomeMail($user));
+        } catch (\Exception $e) {
+            // Silently fail — email is not critical for registration
+            \Log::error('Welcome email failed: ' . $e->getMessage());
+        }
 
         // Redirect to the correct dashboard based on role
         if ($user->isAdmin()) {

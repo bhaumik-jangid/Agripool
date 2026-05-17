@@ -60,20 +60,32 @@ class PoolController extends Controller
             return back()->with('error', 'This pool is no longer open.');
         }
 
-        $alreadyJoined = PoolMember::where('pool_id', $pool->id)
-            ->where('user_id', Auth::id())
-            ->exists();
-        if ($alreadyJoined) {
-            return back()->with('error', 'You are already in this pool.');
+        // Strict capacity check
+        if ($transportRequest->quantity_kg > $pool->total_capacity_kg) {
+            return back()->with(
+                'error',
+                'Your cargo (' . number_format($transportRequest->quantity_kg)
+                . 'kg) exceeds the maximum truck capacity ('
+                . number_format($pool->total_capacity_kg) . 'kg). '
+                . 'Please create a separate request.'
+            );
         }
 
         if ($pool->availableCapacity() < $transportRequest->quantity_kg) {
             return back()->with(
                 'error',
-                'Not enough space in this pool for your cargo ('
-                . number_format($transportRequest->quantity_kg) . 'kg needed, '
-                . number_format($pool->availableCapacity()) . 'kg available).'
+                'Not enough space. Available: '
+                . number_format($pool->availableCapacity()) . 'kg, '
+                . 'Your cargo: '
+                . number_format($transportRequest->quantity_kg) . 'kg.'
             );
+        }
+
+        $alreadyJoined = PoolMember::where('pool_id', $pool->id)
+            ->where('user_id', Auth::id())
+            ->exists();
+        if ($alreadyJoined) {
+            return back()->with('error', 'You are already in this pool.');
         }
 
         PoolMember::create([
@@ -90,7 +102,6 @@ class PoolController extends Controller
             $pool->update(['status' => 'full']);
         }
 
-        // Recalculate cost shares
         $service = new PoolMatchingService();
         $service->recalculateCostShares($pool);
 

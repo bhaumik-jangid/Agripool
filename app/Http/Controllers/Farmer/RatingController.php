@@ -9,6 +9,7 @@ use App\Models\DriverProfile;
 use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\SubmitRatingRequest;
 
 class RatingController extends Controller
 {
@@ -57,11 +58,6 @@ class RatingController extends Controller
                 ->route('farmer.track', $shipment->tracking_code)
                 ->with('error', 'Already rated.');
         }
-
-        $request->validate([
-            'rating'  => ['required', 'integer', 'min:1', 'max:5'],
-            'comment' => ['nullable', 'string', 'max:500'],
-        ]);
 
         // Save the rating on pool member record
         $myMember->update([

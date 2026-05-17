@@ -1,6 +1,6 @@
 @extends('layouts.farmer')
 @section('title', 'Farmer Dashboard')
-@section('page-title', 'Dashboard')
+@section('page-title', __('agripool.dashboard'))
 @section('page-subtitle', 'Welcome back, ' . Auth::user()->name)
 
 @section('content')

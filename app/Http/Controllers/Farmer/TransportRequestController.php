@@ -7,6 +7,8 @@ use App\Models\TransportRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Services\PoolMatchingService;
+use App\Http\Requests\StoreTransportRequestRequest;
+use App\Http\Requests\UpdateTransportRequestRequest;
 
 class TransportRequestController extends Controller
 {
@@ -29,46 +31,25 @@ class TransportRequestController extends Controller
 
     // ── STORE — Save the new request to database ──────────────
     // Like: POST /api/requests in Express
-    public function store(Request $request)
+    public function store(StoreTransportRequestRequest $request)
     {
-        $validated = $request->validate([
-            'crop_type' => ['required', 'string', 'max:100'],
-            'quantity_kg' => ['required', 'numeric', 'min:1', 'max:50000'],
-            'packaging_type' => ['required', 'string', 'max:100'],
-            'pickup_location' => ['required', 'string', 'max:255'],
-            'pickup_district' => ['required', 'string', 'max:100'],
-            'pickup_state' => ['required', 'string', 'max:100'],
-            'destination_market' => ['required', 'string', 'max:255'],
-            'destination_district' => ['required', 'string', 'max:100'],
-            'preferred_pickup_date' => ['required', 'date', 'after:today'],
-            'preferred_pickup_time' => ['nullable', 'string'],
-            'special_instructions' => ['nullable', 'string', 'max:500'],
-        ]);
-
-        if (!empty($validated['preferred_pickup_time'])) {
-            $validated['preferred_pickup_time'] = date(
-                'H:i:s',
-                strtotime($validated['preferred_pickup_time'])
-            );
-        }
+        // $request is already validated — no manual validate() needed
+        $validated = $request->validated();
 
         $validated['user_id'] = Auth::id();
         $validated['status'] = 'pending';
 
         $transportRequest = TransportRequest::create($validated);
 
-        // Run matching service — only FIND, do not join yet
         $matchingService = new PoolMatchingService();
         $matchingPool = $matchingService->findMatch($transportRequest);
 
         if ($matchingPool) {
-            // A pool match was found — calculate costs and show confirmation
             $costInfo = $matchingService->calculateSharedCost(
                 $matchingPool,
                 $transportRequest->quantity_kg
             );
 
-            // Store match details in session for the confirmation page
             session([
                 'pool_match' => [
                     'request_id' => $transportRequest->id,
@@ -86,18 +67,15 @@ class TransportRequestController extends Controller
                 ]
             ]);
 
-            // Redirect to confirmation page
             return redirect()->route('farmer.requests.confirm');
         }
 
-        // No match found — create new pool automatically, farmer is first member
         $matchingService->createNewPool($transportRequest);
 
         return redirect()->route('farmer.requests.index')
             ->with(
                 'success',
-                '✅ Request submitted! A new pool has been created. '
-                . 'Other farmers going the same way will be added soon.'
+                'Request submitted! A new pool has been created.'
             );
     }
 
@@ -176,40 +154,23 @@ class TransportRequestController extends Controller
     }
 
     // ── UPDATE — Save edited request ──────────────────────────
-    public function update(Request $request, TransportRequest $transportRequest)
-    {
+    public function update(
+        UpdateTransportRequestRequest $request,
+        TransportRequest $transportRequest
+    ) {
         if ($transportRequest->user_id !== Auth::id()) {
-            abort(403, 'Unauthorized');
+            abort(403);
         }
 
         if (!$transportRequest->isEditable()) {
             return redirect()->route('farmer.requests.index')
-                ->with('error', 'This request cannot be edited.');
+                ->with(
+                    'error',
+                    'This request cannot be edited.'
+                );
         }
 
-        $validated = $request->validate([
-            'crop_type' => ['required', 'string', 'max:100'],
-            'quantity_kg' => ['required', 'numeric', 'min:1', 'max:50000'],
-            'packaging_type' => ['required', 'string', 'max:100'],
-            'pickup_location' => ['required', 'string', 'max:255'],
-            'pickup_district' => ['required', 'string', 'max:100'],
-            'pickup_state' => ['required', 'string', 'max:100'],
-            'destination_market' => ['required', 'string', 'max:255'],
-            'destination_district' => ['required', 'string', 'max:100'],
-            'preferred_pickup_date' => ['required', 'date'],
-            'preferred_pickup_time' => ['nullable', 'string'],
-            'special_instructions' => ['nullable', 'string', 'max:500'],
-        ]);
-
-        if (!empty($validated['preferred_pickup_time'])) {
-            $validated['preferred_pickup_time'] = date(
-                'H:i:s',
-                strtotime($validated['preferred_pickup_time'])
-            );
-        }
-
-        // Update — like findByIdAndUpdate in Mongoose
-        $transportRequest->update($validated);
+        $transportRequest->update($request->validated());
 
         return redirect()->route('farmer.requests.index')
             ->with('success', 'Request updated successfully!');

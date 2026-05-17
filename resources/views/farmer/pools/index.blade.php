@@ -74,19 +74,51 @@
                         </span>
                     </div>
 
-                    {{-- PRICE — prominently shown --}}
-                    <div class="p-2 rounded-3 mb-2 text-center"
-                         style="background:#f0faf4;border:1px solid #c3e6cb;">
-                        <div style="font-size:.72rem;color:#888;">
-                            Full Truck Cost
+                    {{-- PRICE — full cost + farmer's individual estimate --}}
+                    <div class="mb-2">
+                        {{-- Full truck cost --}}
+                        <div class="d-flex justify-content-between align-items-center
+                                    p-2 rounded-3 mb-1"
+                            style="background:#f8fafc;border:1px solid #e2e8f0;">
+                            <span style="font-size:.72rem;color:#94a3b8;font-weight:500;">
+                                Full Truck Cost
+                            </span>
+                            <span style="font-size:.85rem;font-weight:700;color:#64748b;">
+                                ₹{{ number_format($pool->total_cost ?? 0, 0) }}
+                            </span>
                         </div>
-                        <div class="fw-bold"
-                             style="color:#2d6a4f;font-size:1.2rem;">
-                            ₹{{ number_format($pool->total_cost ?? 0, 0) }}
-                        </div>
-                        <div style="font-size:.7rem;color:#888;">
-                            You pay proportional to your cargo weight
-                        </div>
+
+                        {{-- Farmer's estimated share --}}
+                        @if($myPendingRequests->isNotEmpty())
+                            @foreach($myPendingRequests->take(1) as $myReq)
+                                @php
+                                    $newUsed   = $pool->used_capacity_kg + $myReq->quantity_kg;
+                                    $myPct     = $newUsed > 0
+                                        ? ($myReq->quantity_kg / $newUsed) * 100 : 0;
+                                    $myCost    = ($myPct / 100) * ($pool->total_cost ?? 0);
+                                    $fits      = $pool->availableCapacity() >= $myReq->quantity_kg;
+                                @endphp
+                                @if($fits)
+                                    <div class="p-2 rounded-3 text-center"
+                                        style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);
+                                                border:1px solid #86efac;">
+                                        <div style="font-size:.68rem;color:#14532d;
+                                                    font-weight:600;text-transform:uppercase;
+                                                    letter-spacing:.05em;">
+                                            You Pay (estimated)
+                                        </div>
+                                        <div style="font-size:1.3rem;font-weight:800;
+                                                    color:#15803d;letter-spacing:-.5px;">
+                                            ₹{{ number_format($myCost, 0) }}
+                                        </div>
+                                        <div style="font-size:.68rem;color:#16a34a;">
+                                            {{ round($myPct, 1) }}% of truck
+                                            · {{ number_format($myReq->quantity_kg) }}kg
+                                        </div>
+                                    </div>
+                                @endif
+                            @endforeach
+                        @endif
                     </div>
 
                     {{-- Capacity bar --}}

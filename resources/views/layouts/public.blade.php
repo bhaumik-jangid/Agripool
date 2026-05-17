@@ -6,7 +6,8 @@
     <meta name="description" content="AgriPool — Smart transport sharing platform for farmers. Share trucks, split costs, deliver produce to markets together.">
     <title>@yield('title', 'AgriPool — Agricultural Transport Sharing')</title>
 
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/css/premium.css'])
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 
     <style>
         :root {

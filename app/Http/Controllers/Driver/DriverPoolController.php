@@ -9,6 +9,8 @@ use App\Models\PoolMember;
 use App\Models\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use App\Mail\DriverAssignedMail;
+use Illuminate\Support\Facades\Mail;
 
 class DriverPoolController extends Controller
 {
@@ -67,6 +69,22 @@ class DriverPoolController extends Controller
             'driver_id' => $driver->id,
             'status' => 'pickup_pending',
         ]);
+
+        // Send email to each farmer
+        PoolMember::where('pool_id', $pool->id)
+            ->get()
+            ->each(function ($member) use ($shipment) {
+                try {
+                    $farmer = \App\Models\User::find($member->user_id);
+                    if ($farmer) {
+                        Mail::to($farmer->email)
+                            ->send(new DriverAssignedMail($farmer, $shipment));
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Driver assigned email failed: '
+                        . $e->getMessage());
+                }
+            });
 
         // Update all transport requests in this pool to 'assigned'
         PoolMember::where('pool_id', $pool->id)

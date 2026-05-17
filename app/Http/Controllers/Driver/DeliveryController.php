@@ -9,6 +9,8 @@ use App\Models\Notification;
 use App\Models\PoolMember;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Mail\DeliveryCompleteMail;
+use Illuminate\Support\Facades\Mail;
 
 class DeliveryController extends Controller
 {
@@ -16,9 +18,9 @@ class DeliveryController extends Controller
     public function index()
     {
         $shipments = Shipment::where('driver_id', Auth::id())
-                        ->with('pool')
-                        ->orderBy('created_at', 'desc')
-                        ->paginate(10);
+            ->with('pool')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
 
         return view('driver.deliveries.index', compact('shipments'));
     }
@@ -32,8 +34,10 @@ class DeliveryController extends Controller
         }
 
         // Load related data
-        $shipment->load('pool.members.farmer.farmerProfile',
-                        'pool.members.transportRequest');
+        $shipment->load(
+            'pool.members.farmer.farmerProfile',
+            'pool.members.transportRequest'
+        );
 
         return view('driver.deliveries.show', compact('shipment'));
     }
@@ -46,15 +50,15 @@ class DeliveryController extends Controller
         }
 
         $request->validate([
-            'status'           => ['required', 'in:cargo_loaded,in_transit,delivered,failed'],
+            'status' => ['required', 'in:cargo_loaded,in_transit,delivered,failed'],
             'current_location' => ['nullable', 'string', 'max:255'],
-            'driver_notes'     => ['nullable', 'string', 'max:500'],
+            'driver_notes' => ['nullable', 'string', 'max:500'],
         ]);
 
         $updateData = [
-            'status'           => $request->status,
+            'status' => $request->status,
             'current_location' => $request->current_location,
-            'driver_notes'     => $request->driver_notes,
+            'driver_notes' => $request->driver_notes,
         ];
 
         // Set timestamps based on status
@@ -68,10 +72,10 @@ class DeliveryController extends Controller
 
             // Update all transport requests
             PoolMember::where('pool_id', $shipment->pool_id)
-                      ->get()
-                      ->each(function ($member) {
-                          $member->transportRequest->update(['status' => 'in_transit']);
-                      });
+                ->get()
+                ->each(function ($member) {
+                    $member->transportRequest->update(['status' => 'in_transit']);
+                });
         }
 
         if ($request->status === 'delivered') {
@@ -89,34 +93,52 @@ class DeliveryController extends Controller
                 // Notify each farmer
                 Notification::create([
                     'user_id' => $member->user_id,
-                    'title'   => '🎉 Delivery Complete!',
+                    'title' => '🎉 Delivery Complete!',
                     'message' => 'Your produce has been successfully delivered to the market. ' .
-                                 'Please rate your experience.',
-                    'type'    => 'delivery_completed',
-                    'link'    => '/farmer/history',
+                        'Please rate your experience.',
+                    'type' => 'delivery_completed',
+                    'link' => '/farmer/history',
                 ]);
 
                 // Notify each farmer — with payment reminder
                 Notification::create([
                     'user_id' => $member->user_id,
-                    'title'   => '🎉 Delivery Complete — Payment Due!',
+                    'title' => '🎉 Delivery Complete — Payment Due!',
                     'message' => 'Your produce has been successfully delivered to '
-                                . $shipment->pool->destination_market
-                                . '. Please confirm your payment of ₹'
-                                . number_format($member->cost_share ?? 0, 2)
-                                . ' to your driver. Go to My Requests → View → Payment.',
-                    'type'    => 'payment_due',
-                    'link'    => '/farmer/requests/' . $member->transport_request_id,
+                        . $shipment->pool->destination_market
+                        . '. Please confirm your payment of ₹'
+                        . number_format($member->cost_share ?? 0, 2)
+                        . ' to your driver. Go to My Requests → View → Payment.',
+                    'type' => 'payment_due',
+                    'link' => '/farmer/requests/' . $member->transport_request_id,
                 ]);
+            }
+
+            // Send delivery complete email with payment reminder
+            foreach ($poolMembers as $member) {
+                try {
+                    $farmer = \App\Models\User::find($member->user_id);
+                    if ($farmer) {
+                        Mail::to($farmer->email)
+                            ->send(new DeliveryCompleteMail(
+                                $farmer,
+                                $shipment,
+                                $member
+                            ));
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Delivery complete email failed: '
+                        . $e->getMessage());
+                }
             }
 
             // Create earnings record for driver
             if ($shipment->pool->total_cost) {
                 Earning::create([
-                    'user_id'     => Auth::id(),
+                    'user_id' => Auth::id(),
                     'shipment_id' => $shipment->id,
-                    'amount'      => $shipment->pool->total_cost,
-                    'status'      => 'pending',
+                    'amount' => $shipment->pool->total_cost,
+                    'status' => 'pending',
                 ]);
             }
 
@@ -129,7 +151,9 @@ class DeliveryController extends Controller
 
         $shipment->update($updateData);
 
-        return back()->with('success',
-            'Shipment status updated to: ' . ucfirst(str_replace('_', ' ', $request->status)));
+        return back()->with(
+            'success',
+            'Shipment status updated to: ' . ucfirst(str_replace('_', ' ', $request->status))
+        );
     }
 }

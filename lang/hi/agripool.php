@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'welcome'            => 'वापस स्वागत है, :name',
+    'dashboard'          => 'डैशबोर्ड',
+    'transport_requests' => 'परिवहन अनुरोध',
+    'create_request'     => 'नया अनुरोध बनाएं',
+    'browse_pools'       => 'पूल देखें',
+    'delivery_history'   => 'डिलीवरी इतिहास',
+    'notifications'      => 'सूचनाएं',
+    'my_profile'         => 'मेरी प्रोफ़ाइल',
+    'total_requests'     => 'कुल अनुरोध',
+    'active_requests'    => 'सक्रिय अनुरोध',
+    'delivered'          => 'डिलीवर हुआ',
+    'sign_out'           => 'साइन आउट',
+    'crop_type'          => 'फसल प्रकार',
+    'quantity'           => 'मात्रा',
+    'destination'        => 'गंतव्य बाजार',
+    'pickup_date'        => 'पिकअप दिनांक',
+    'status'             => 'स्थिति',
+    'actions'            => 'कार्रवाई',
+    'payment_due'        => 'भुगतान बाकी',
+    'pay_now'            => 'अभी भुगतान करें',
+    'track_shipment'     => 'शिपमेंट ट्रैक करें',
+    'rate_driver'        => 'ड्राइवर को रेट करें',
+    'join_pool'          => 'पूल में शामिल हों',
+    'leave_pool'         => 'पूल छोड़ें',
+];

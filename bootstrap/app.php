@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'driver' => \App\Http\Middleware\DriverMiddleware::class,
             'admin'  => \App\Http\Middleware\AdminMiddleware::class,
         ]);
+        $middleware->prepend(\App\Http\Middleware\SetLocale::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

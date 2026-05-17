@@ -8,6 +8,8 @@ use App\Models\TransportRequest;
 use App\Models\Notification;
 use Illuminate\Support\Str;
 use App\Data\DistrictData;
+use App\Mail\PoolMatchedMail;
+use Illuminate\Support\Facades\Mail;
 
 class PoolMatchingService
 {
@@ -39,14 +41,16 @@ class PoolMatchingService
                 $request->preferred_pickup_date->copy()->subDay(),
                 $request->preferred_pickup_date->copy()->addDay(),
             ])
-            // Only pools with enough remaining space
+            // Cargo must fit in remaining space
             ->whereRaw(
                 '(total_capacity_kg - used_capacity_kg) >= ?',
                 [$request->quantity_kg]
             )
+            // Cargo must not exceed total truck capacity either
+            ->where('total_capacity_kg', '>=', $request->quantity_kg)
             ->whereNull('driver_id')
-            ->whereHas('members') // Must have at least one farmer
-            ->orderByRaw('(total_capacity_kg - used_capacity_kg) ASC') // Tightest fit first
+            ->whereHas('members')
+            ->orderByRaw('(total_capacity_kg - used_capacity_kg) ASC')
             ->first();
     }
 
@@ -226,15 +230,10 @@ class PoolMatchingService
     ): void {
         $messages = [
             'shared' => 'You joined a shared pool going to '
-                . $pool->destination_market
-                . '. A driver will be assigned soon.',
-            'solo' => 'Your solo transport pool has been created for '
-                . $request->crop_type . ' going to '
-                . $request->destination_market
-                . '. Full truck reserved for you.',
+                . $pool->destination_market . '.',
+            'solo' => 'Your solo transport pool has been created.',
             'new' => 'A new pool has been created for your '
-                . $request->crop_type
-                . '. Waiting for more farmers or a driver.',
+                . $request->crop_type . '.',
         ];
 
         Notification::create([
@@ -246,5 +245,26 @@ class PoolMatchingService
             'type' => 'pool_matched',
             'link' => '/farmer/requests/' . $request->id,
         ]);
+
+        // Send email
+        try {
+            $farmer = \App\Models\User::find($request->user_id);
+            $member = $pool->members()
+                ->where('user_id', $request->user_id)
+                ->first();
+            $costShare = $member?->cost_share ?? 0;
+
+            if ($farmer) {
+                Mail::to($farmer->email)
+                    ->send(new PoolMatchedMail(
+                        $farmer,
+                        $pool,
+                        $request,
+                        $costShare
+                    ));
+            }
+        } catch (\Exception $e) {
+            \Log::error('Pool matched email failed: ' . $e->getMessage());
+        }
     }
 }

@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Mail\ContactFormMail;
+use Illuminate\Support\Facades\Mail;
+use App\Http\Requests\StoreContactRequest;
 
 class PublicController extends Controller
 {
@@ -20,19 +23,24 @@ class PublicController extends Controller
     }
 
     // Handle contact form submission
-    public function submitContact(Request $request)
+    public function submitContact(StoreContactRequest $request)
     {
-        $request->validate([
-            'name'    => ['required', 'string', 'max:255'],
-            'email'   => ['required', 'email'],
-            'subject' => ['required', 'string', 'max:255'],
-            'message' => ['required', 'string', 'min:10'],
-        ]);
+        try {
+            Mail::to(config('mail.from.address'))
+                ->send(new ContactFormMail(
+                    $request->name,
+                    $request->email,
+                    $request->subject,
+                    $request->message
+                ));
+        } catch (\Exception $e) {
+            \Log::error('Contact email failed: ' . $e->getMessage());
+        }
 
-        // We will connect this to email in Phase 10
-        // For now, just flash a success message
-        return back()->with('success',
-            'Thank you, ' . $request->name . '! We received your message and will reply within 24 hours.'
+        return back()->with(
+            'success',
+            'Thank you, ' . $request->name
+            . '! We received your message and will reply within 24 hours.'
         );
     }
 }

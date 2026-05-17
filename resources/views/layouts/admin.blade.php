@@ -1,280 +1,331 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Admin Panel') — AgriPool</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <title>@yield('title', 'Admin') — AgriPool</title>
+    @vite(['resources/css/app.css', 'resources/css/premium.css', 'resources/js/app.js'])
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
+        body {
+            background: #f8fafc;
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+        }
+
         :root {
-            --admin-dark:  #1b1b2f;
-            --admin-mid:   #2d2d44;
-            --admin-accent:#f4a261;
-            --admin-pale:  #fff8f0;
-            --sidebar-w:   260px;
+            --sidebar-w: 256px;
         }
-        body { background:#f4f6f9; font-family:'Segoe UI',system-ui,sans-serif; }
 
-        /* ── Sidebar ── */
         .sidebar {
-            position:fixed; top:0; left:0;
-            width:var(--sidebar-w); height:100vh;
-            background:var(--admin-dark);
-            display:flex; flex-direction:column;
-            z-index:100;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-w);
+            height: 100vh;
+            background: #0f172a;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
         }
+
         .sidebar-brand {
-            padding:24px 20px;
-            font-size:1.2rem; font-weight:800;
-            color:#fff; text-decoration:none; display:block;
-            border-bottom:1px solid rgba(255,255,255,.08);
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, .06);
+            text-decoration: none;
+            display: block;
         }
-        .sidebar-nav { padding:16px 12px; flex:1; overflow-y:auto; }
-        .sidebar-label {
-            font-size:.68rem; font-weight:700;
-            color:rgba(255,255,255,.3);
-            text-transform:uppercase; letter-spacing:1.2px;
-            padding:14px 10px 6px;
+
+        .sidebar-brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        .nav-item-custom {
-            display:flex; align-items:center; gap:10px;
-            padding:10px 14px; border-radius:10px;
-            color:rgba(255,255,255,.65);
-            text-decoration:none; font-size:.88rem;
-            font-weight:500; margin-bottom:2px; transition:all .2s;
+
+        .sidebar-brand-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #f4a261, #e76f51);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .nav-item-custom:hover,
-        .nav-item-custom.active {
-            background:rgba(244,162,97,.15);
-            color:#f4a261;
+
+        .sidebar-brand-text {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -.3px;
         }
-        .nav-icon { font-size:1rem; width:20px; text-align:center; }
+
+        .sidebar-brand-sub {
+            font-size: .68rem;
+            color: rgba(255, 255, 255, .3);
+            font-weight: 500;
+            margin-top: 1px;
+        }
+
+        .sidebar-nav {
+            padding: 12px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .sidebar-section-label {
+            font-size: .65rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, .25);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            padding: 12px 10px 5px;
+        }
+
         .badge-nav {
-            margin-left:auto; background:#e63946;
-            color:#fff; border-radius:50px;
-            padding:1px 7px; font-size:.68rem; font-weight:700;
+            margin-left: auto;
+            background: #ef4444;
+            color: #fff;
+            border-radius: 20px;
+            padding: 1px 7px;
+            font-size: .65rem;
+            font-weight: 700;
         }
+
         .sidebar-footer {
-            padding:16px; border-top:1px solid rgba(255,255,255,.08);
+            padding: 14px 16px;
+            border-top: 1px solid rgba(255, 255, 255, .06);
         }
 
-        /* ── Main ── */
         .main-content {
-            margin-left:var(--sidebar-w);
-            min-height:100vh; display:flex; flex-direction:column;
-        }
-        .topbar {
-            background:#fff; border-bottom:1px solid #eee;
-            padding:14px 28px;
-            display:flex; align-items:center;
-            justify-content:space-between;
-            position:sticky; top:0; z-index:50;
-            box-shadow:0 1px 8px rgba(0,0,0,.05);
-        }
-        .page-content { padding:28px; flex:1; }
-
-        /* ── Cards ── */
-        .stat-card {
-            background:#fff; border-radius:16px;
-            padding:24px; box-shadow:0 2px 12px rgba(0,0,0,.05);
-            border:1px solid #f0f0f0; transition:transform .2s;
-        }
-        .stat-card:hover { transform:translateY(-2px); }
-        .stat-num { font-size:2.2rem; font-weight:800; line-height:1; }
-        .content-card {
-            background:#fff; border-radius:16px;
-            padding:24px; box-shadow:0 2px 12px rgba(0,0,0,.05);
-            border:1px solid #f0f0f0; margin-bottom:24px;
-        }
-
-        /* ── Status badges ── */
-        .status-badge {
-            padding:4px 12px; border-radius:50px;
-            font-size:.75rem; font-weight:700;
-            text-transform:capitalize; display:inline-block;
-        }
-        .status-pending      { background:#fff3cd; color:#856404; }
-        .status-pooled       { background:#cff4fc; color:#055160; }
-        .status-assigned     { background:#d1ecf1; color:#0c5460; }
-        .status-in_transit   { background:#d4edda; color:#155724; }
-        .status-delivered    { background:#d4edda; color:#155724; }
-        .status-cancelled    { background:#f8d7da; color:#721c24; }
-        .status-open         { background:#d4edda; color:#155724; }
-        .status-full         { background:#fff3cd; color:#856404; }
-        .status-completed    { background:#d4edda; color:#155724; }
-        .status-approved     { background:#d4edda; color:#155724; }
-        .status-rejected     { background:#f8d7da; color:#721c24; }
-        .status-pickup_pending { background:#fff3cd; color:#856404; }
-        .status-cargo_loaded { background:#cff4fc; color:#055160; }
-
-        @media(max-width:768px) {
-            .sidebar { transform:translateX(-100%); transition:transform .3s; }
-            .sidebar.open { transform:translateX(0); }
-            .main-content { margin-left:0; }
+            margin-left: var(--sidebar-w);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
     </style>
 </head>
+
 <body>
 
-<aside class="sidebar" id="sidebar">
+    <aside class="sidebar" id="sidebar">
 
-    <a href="{{ route('admin.dashboard') }}" class="sidebar-brand">
-        ⚙️ AgriPool Admin
-        <div style="font-size:.68rem;font-weight:400;
-                    color:rgba(255,255,255,.4);margin-top:2px;">
-            Management Panel
-        </div>
-    </a>
-
-    <nav class="sidebar-nav">
-
-        <div class="sidebar-label">Overview</div>
-
-        <a href="{{ route('admin.dashboard') }}"
-           class="nav-item-custom
-               {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-            <span class="nav-icon">📊</span> Dashboard
-        </a>
-
-        <div class="sidebar-label">Users</div>
-
-        <a href="{{ route('admin.farmers.index') }}"
-           class="nav-item-custom
-               {{ request()->routeIs('admin.farmers.*') ? 'active' : '' }}">
-            <span class="nav-icon">🌾</span> Farmers
-        </a>
-
-        <a href="{{ route('admin.drivers.index') }}"
-           class="nav-item-custom
-               {{ request()->routeIs('admin.drivers.*') ? 'active' : '' }}">
-            <span class="nav-icon">🚛</span> Drivers
-            @php
-                $pendingCount = \App\Models\DriverProfile
-                    ::where('approval_status','pending')->count();
-            @endphp
-            @if($pendingCount > 0)
-                <span class="badge-nav">{{ $pendingCount }}</span>
-            @endif
-        </a>
-
-        <div class="sidebar-label">Operations</div>
-
-        <a href="{{ route('admin.requests.index') }}"
-           class="nav-item-custom
-               {{ request()->routeIs('admin.requests.*') ? 'active' : '' }}">
-            <span class="nav-icon">📋</span> Transport Requests
-        </a>
-
-        <a href="{{ route('admin.pools.index') }}"
-           class="nav-item-custom
-               {{ request()->routeIs('admin.pools.*') ? 'active' : '' }}">
-            <span class="nav-icon">🤝</span> Pools
-        </a>
-
-        <a href="{{ route('admin.shipments.index') }}"
-           class="nav-item-custom
-               {{ request()->routeIs('admin.shipments.*') ? 'active' : '' }}">
-            <span class="nav-icon">📦</span> Shipments
-        </a>
-
-        <div class="sidebar-label">Support</div>
-
-        <a href="{{ route('admin.feedback.index') }}"
-           class="nav-item-custom
-               {{ request()->routeIs('admin.feedback.*') ? 'active' : '' }}">
-            <span class="nav-icon">💬</span> Feedback
-            @php
-                $openFeedback = \App\Models\Feedback
-                    ::where('status','open')->count();
-            @endphp
-            @if($openFeedback > 0)
-                <span class="badge-nav">{{ $openFeedback }}</span>
-            @endif
-        </a>
-
-    </nav>
-
-    <div class="sidebar-footer">
-        <div class="d-flex align-items-center gap-2 mb-3">
-            <div style="width:34px;height:34px;border-radius:50%;
-                background:#f4a261;color:#fff;
-                display:flex;align-items:center;
-                justify-content:center;font-weight:700;font-size:.85rem;">
-                {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
-            </div>
-            <div>
-                <div style="font-size:.82rem;font-weight:600;color:#fff;">
-                    {{ Auth::user()->name }}
+        <a href="{{ route('admin.dashboard') }}" class="sidebar-brand">
+            <div class="sidebar-brand-logo">
+                <div class="sidebar-brand-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                        <path d="M2 17l10 5 10-5" />
+                        <path d="M2 12l10 5 10-5" />
+                    </svg>
                 </div>
-                <div style="font-size:.68rem;color:rgba(255,255,255,.4);">
-                    Administrator
+                <div>
+                    <div class="sidebar-brand-text">AgriPool</div>
+                    <div class="sidebar-brand-sub">Admin Panel</div>
                 </div>
             </div>
+        </a>
+
+        <nav class="sidebar-nav nav-dark">
+
+            <div class="sidebar-section-label">Overview</div>
+
+            <a href="{{ route('admin.dashboard') }}"
+                class="nav-item-custom {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+                <span class="nav-icon">
+                    <i data-lucide="layout-dashboard" width="16" height="16"></i>
+                </span>
+                Dashboard
+            </a>
+
+            <div class="sidebar-section-label">Users</div>
+
+            <a href="{{ route('admin.farmers.index') }}"
+                class="nav-item-custom {{ request()->routeIs('admin.farmers.*') ? 'active' : '' }}">
+                <span class="nav-icon">
+                    <i data-lucide="sprout" width="16" height="16"></i>
+                </span>
+                Farmers
+            </a>
+
+            <a href="{{ route('admin.drivers.index') }}"
+                class="nav-item-custom {{ request()->routeIs('admin.drivers.*') ? 'active' : '' }}">
+                <span class="nav-icon">
+                    <i data-lucide="truck" width="16" height="16"></i>
+                </span>
+                Drivers
+                @php
+                    $pendingCount = \App\Models\DriverProfile
+                        ::where('approval_status', 'pending')->count();
+                @endphp
+                @if($pendingCount > 0)
+                    <span class="badge-nav">{{ $pendingCount }}</span>
+                @endif
+            </a>
+
+            <div class="sidebar-section-label">Operations</div>
+
+            <a href="{{ route('admin.requests.index') }}"
+                class="nav-item-custom {{ request()->routeIs('admin.requests.*') ? 'active' : '' }}">
+                <span class="nav-icon">
+                    <i data-lucide="file-text" width="16" height="16"></i>
+                </span>
+                Requests
+            </a>
+
+            <a href="{{ route('admin.pools.index') }}"
+                class="nav-item-custom {{ request()->routeIs('admin.pools.*') ? 'active' : '' }}">
+                <span class="nav-icon">
+                    <i data-lucide="git-merge" width="16" height="16"></i>
+                </span>
+                Pools
+            </a>
+
+            <a href="{{ route('admin.shipments.index') }}"
+                class="nav-item-custom {{ request()->routeIs('admin.shipments.*') ? 'active' : '' }}">
+                <span class="nav-icon">
+                    <i data-lucide="navigation" width="16" height="16"></i>
+                </span>
+                Shipments
+            </a>
+
+            <div class="sidebar-section-label">Support</div>
+
+            <a href="{{ route('admin.feedback.index') }}"
+                class="nav-item-custom {{ request()->routeIs('admin.feedback.*') ? 'active' : '' }}">
+                <span class="nav-icon">
+                    <i data-lucide="message-square" width="16" height="16"></i>
+                </span>
+                Feedback
+                @php
+                    $openFeedback = \App\Models\Feedback
+                        ::where('status', 'open')->count();
+                @endphp
+                @if($openFeedback > 0)
+                    <span class="badge-nav">{{ $openFeedback }}</span>
+                @endif
+            </a>
+
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <div class="user-avatar" style="background:linear-gradient(135deg,#f4a261,#e76f51);">
+                    {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
+                </div>
+                <div style="overflow:hidden;flex:1;">
+                    <div style="font-size:.82rem;font-weight:600;
+                    color:#fff;white-space:nowrap;
+                    overflow:hidden;text-overflow:ellipsis;">
+                        {{ Auth::user()->name }}
+                    </div>
+                    <div style="font-size:.68rem;color:rgba(255,255,255,.3);">
+                        Administrator
+                    </div>
+                </div>
+            </div>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="btn w-100 d-flex align-items-center
+                           justify-content-center gap-2" style="background:rgba(255,255,255,.06);
+                           color:rgba(255,255,255,.45);
+                           border:1px solid rgba(255,255,255,.08);
+                           border-radius:10px;font-size:.8rem;
+                           font-weight:500;padding:8px;
+                           transition:all 160ms ease;" onmouseover="this.style.background='rgba(239,68,68,.15)';
+                                 this.style.color='#ef4444'" onmouseout="this.style.background='rgba(255,255,255,.06)';
+                                this.style.color='rgba(255,255,255,.45)'">
+                    <i data-lucide="log-out" width="14" height="14"></i>
+                    Sign Out
+                </button>
+            </form>
         </div>
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-            <button type="submit"
-                    class="btn btn-sm w-100"
-                    style="background:rgba(255,255,255,.08);
-                           color:rgba(255,255,255,.7);
-                           border:1px solid rgba(255,255,255,.1);
-                           border-radius:8px;font-size:.8rem;">
-                🚪 Logout
-            </button>
-        </form>
-    </div>
 
-</aside>
+    </aside>
 
-<div class="main-content">
+    <div class="main-content">
 
-    <div class="topbar">
-        <div class="d-flex align-items-center gap-3">
-            <button class="btn btn-sm btn-outline-secondary d-md-none"
-                    onclick="document.getElementById('sidebar')
-                             .classList.toggle('open')">☰</button>
-            <div>
-                <h6 class="mb-0 fw-bold">
-                    @yield('page-title', 'Dashboard')
-                </h6>
-                <small class="text-muted">
-                    @yield('page-subtitle', 'Admin Panel')
-                </small>
+        <div class="topbar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-sm d-md-none" style="background:transparent;
+                           border:1px solid #e2e8f0;
+                           border-radius:8px;padding:6px 8px;" onclick="document.getElementById('sidebar')
+                             .classList.toggle('open')">
+                    <i data-lucide="menu" width="16" height="16"></i>
+                </button>
+                <div>
+                    <h6 class="mb-0 fw-bold" style="color:#1a1a2e;font-size:.95rem;">
+                        @yield('page-title', 'Dashboard')
+                    </h6>
+                    <p class="mb-0" style="font-size:.72rem;color:#94a3b8;">
+                        @yield('page-subtitle', 'Admin Panel')
+                    </p>
+                </div>
             </div>
+            <span style="font-size:.72rem;font-weight:600;color:#c2410c;
+            background:#fff7ed;padding:4px 10px;border-radius:20px;
+            border:1px solid rgba(194,65,12,.15);">
+                Admin
+            </span>
         </div>
-        <span class="badge"
-              style="background:#fff8f0;color:#f4a261;
-                     border:1px solid #f4a261;font-size:.8rem;
-                     padding:5px 12px;">
-            ⚙️ Admin
-        </span>
+
+        <div class="px-4 pt-3">
+            @if(session('success'))
+                <div class="alert alert-success-premium alert-premium
+                            flash-message alert-dismissible d-flex
+                            align-items-center gap-2 mb-3">
+                    <i data-lucide="check-circle" width="16" height="16"></i>
+                    {{ session('success') }}
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"
+                        style="font-size:.7rem;"></button>
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="alert alert-danger-premium alert-premium
+                            flash-message alert-dismissible d-flex
+                            align-items-center gap-2 mb-3">
+                    <i data-lucide="alert-circle" width="16" height="16"></i>
+                    {{ session('error') }}
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"
+                        style="font-size:.7rem;"></button>
+                </div>
+            @endif
+            {{-- Global validation errors summary --}}
+            @if($errors->any())
+                <div class="alert alert-danger-premium alert-premium flash-message
+                    alert-dismissible mb-3">
+                    <div class="d-flex align-items-start gap-2">
+                        <i data-lucide="alert-circle" width="16" height="16" style="flex-shrink:0;margin-top:1px;"></i>
+                        <div>
+                            <div class="fw-semibold small mb-1">
+                                Please fix the following errors:
+                            </div>
+                            <ul class="mb-0 ps-3" style="font-size:.82rem;">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"
+                        style="font-size:.7rem;"></button>
+                </div>
+            @endif
+        </div>
+
+        <div class="page-content">
+            @yield('content')
+        </div>
+
     </div>
 
-    <div class="px-4 pt-3">
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible
-                        fade show rounded-3">
-                ✅ {{ session('success') }}
-                <button type="button" class="btn-close"
-                        data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-        @if(session('error'))
-            <div class="alert alert-danger alert-dismissible
-                        fade show rounded-3">
-                ❌ {{ session('error') }}
-                <button type="button" class="btn-close"
-                        data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-    </div>
-
-    <div class="page-content">
-        @yield('content')
-    </div>
-
-</div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            lucide.createIcons();
+        });
+    </script>
     @stack('scripts')
 </body>
+
 </html>

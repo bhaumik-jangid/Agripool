@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\StoreVehicleRequest;
 
 class VehicleController extends Controller
 {
@@ -15,26 +16,18 @@ class VehicleController extends Controller
         return view('driver.vehicle', compact('vehicle'));
     }
 
-    public function store(Request $request)
+    public function store(StoreVehicleRequest $request)
     {
-        $validated = $request->validate([
-            'vehicle_type'     => ['required', 'string'],
-            'vehicle_number'   => ['required', 'string', 'unique:vehicles,vehicle_number'],
-            'vehicle_model'    => ['nullable', 'string'],
-            'capacity_tonnes'  => ['required', 'numeric', 'min:0.1'],
-            'manufacture_year' => ['nullable', 'integer', 'min:2000',
-                                   'max:' . date('Y')],
-            'insurance_number' => ['nullable', 'string'],
-            'insurance_expiry' => ['nullable', 'string'],
-        ]);
-
-        $validated['user_id']     = Auth::id();
+        $validated = $request->validated();
+        $validated['user_id'] = Auth::id();
         $validated['is_verified'] = false;
 
         Vehicle::create($validated);
 
-        return back()->with('success',
-            'Vehicle added! Admin will verify it shortly.');
+        return back()->with(
+            'success',
+            'Vehicle registered! Admin will verify it shortly.'
+        );
     }
 
     public function update(Request $request, Vehicle $vehicle)
@@ -44,9 +37,9 @@ class VehicleController extends Controller
         }
 
         $validated = $request->validate([
-            'vehicle_type'     => ['required', 'string'],
-            'vehicle_model'    => ['nullable', 'string'],
-            'capacity_tonnes'  => ['required', 'numeric', 'min:0.1'],
+            'vehicle_type' => ['required', 'string'],
+            'vehicle_model' => ['nullable', 'string'],
+            'capacity_tonnes' => ['required', 'numeric', 'min:0.1'],
             'manufacture_year' => ['nullable', 'integer'],
             'insurance_number' => ['nullable', 'string'],
             'insurance_expiry' => ['nullable', 'string'],

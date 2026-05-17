@@ -1,241 +1,313 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Driver Panel') — AgriPool</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/css/premium.css', 'resources/js/app.js'])
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
         :root {
-            --driver-blue:  #1d3557;
-            --driver-mid:   #457b9d;
-            --driver-light: #a8dadc;
-            --driver-pale:  #e8f4f8;
-            --sidebar-w:    250px;
+            --driver-dark: #1d3557;
+            --driver-mid: #2d5282;
+            --driver-light: #457b9d;
+            --driver-pale: #eff6ff;
+            --sidebar-w: 256px;
         }
-        body { background:#f0f4f8; font-family:'Segoe UI',system-ui,sans-serif; }
+
+        body {
+            background: #f8fafc;
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+        }
 
         .sidebar {
-            position:fixed; top:0; left:0;
-            width:var(--sidebar-w); height:100vh;
-            background:#fff;
-            border-right:1px solid #e0ecf4;
-            display:flex; flex-direction:column;
-            z-index:100;
-            box-shadow:2px 0 12px rgba(0,0,0,.05);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-w);
+            height: 100vh;
+            background: #0f172a;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
         }
+
         .sidebar-brand {
-            padding:24px 20px 20px;
-            border-bottom:1px solid #e0ecf4;
-            font-size:1.3rem; font-weight:800;
-            color:var(--driver-blue);
-            text-decoration:none; display:block;
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, .06);
+            text-decoration: none;
+            display: block;
         }
-        .sidebar-nav { padding:16px 12px; flex:1; overflow-y:auto; }
-        .sidebar-label {
-            font-size:.7rem; font-weight:700; color:#aaa;
-            text-transform:uppercase; letter-spacing:1px;
-            padding:12px 10px 6px;
+
+        .sidebar-brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        .nav-item-custom {
-            display:flex; align-items:center; gap:10px;
-            padding:10px 14px; border-radius:10px;
-            color:#555; text-decoration:none; font-size:.9rem;
-            font-weight:500; margin-bottom:2px; transition:all .2s;
+
+        .sidebar-brand-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #1d3557, #457b9d);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .nav-item-custom:hover,
-        .nav-item-custom.active {
-            background:var(--driver-pale);
-            color:var(--driver-blue); font-weight:600;
+
+        .sidebar-brand-text {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -.3px;
         }
-        .nav-icon { font-size:1.1rem; width:22px; text-align:center; }
+
+        .sidebar-brand-sub {
+            font-size: .68rem;
+            color: rgba(255, 255, 255, .35);
+            font-weight: 500;
+            margin-top: 1px;
+        }
+
+        .sidebar-nav {
+            padding: 12px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .sidebar-section-label {
+            font-size: .65rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, .25);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            padding: 12px 10px 5px;
+        }
+
+        .badge-notif {
+            margin-left: auto;
+            background: #ef4444;
+            color: #fff;
+            border-radius: 20px;
+            padding: 1px 7px;
+            font-size: .65rem;
+            font-weight: 700;
+        }
+
         .sidebar-footer {
-            padding:16px 12px;
-            border-top:1px solid #e0ecf4;
+            padding: 14px 16px;
+            border-top: 1px solid rgba(255, 255, 255, .06);
         }
+
         .main-content {
-            margin-left:var(--sidebar-w);
-            min-height:100vh; display:flex; flex-direction:column;
-        }
-        .topbar {
-            background:#fff; border-bottom:1px solid #e0ecf4;
-            padding:14px 28px;
-            display:flex; align-items:center;
-            justify-content:space-between;
-            position:sticky; top:0; z-index:50;
-        }
-        .page-content { padding:28px; flex:1; }
-        .stat-card {
-            background:#fff; border-radius:16px;
-            padding:24px; box-shadow:0 2px 12px rgba(0,0,0,.05);
-            border:1px solid #f0f0f0; transition:transform .2s;
-        }
-        .stat-card:hover { transform:translateY(-2px); }
-        .stat-num { font-size:2.2rem; font-weight:800; line-height:1; }
-        .content-card {
-            background:#fff; border-radius:16px;
-            padding:24px; box-shadow:0 2px 12px rgba(0,0,0,.05);
-            border:1px solid #f0f0f0;
-        }
-
-        /* Shipment status timeline */
-        .timeline { position:relative; padding-left:32px; }
-        .timeline::before {
-            content:''; position:absolute; left:11px; top:0; bottom:0;
-            width:2px; background:#e0e0e0;
-        }
-        .timeline-item { position:relative; padding-bottom:24px; }
-        .timeline-dot {
-            position:absolute; left:-27px; top:2px;
-            width:18px; height:18px; border-radius:50%;
-            border:3px solid #e0e0e0; background:#fff;
-            display:flex; align-items:center; justify-content:center;
-        }
-        .timeline-dot.active  { border-color:var(--driver-blue); background:var(--driver-blue); }
-        .timeline-dot.done    { border-color:#52b788; background:#52b788; }
-
-        /* Status badges */
-        .status-badge {
-            padding:4px 12px; border-radius:50px;
-            font-size:.75rem; font-weight:700;
-            text-transform:capitalize; display:inline-block;
-        }
-        .status-pickup_pending { background:#fff3cd; color:#856404; }
-        .status-cargo_loaded   { background:#cff4fc; color:#055160; }
-        .status-in_transit     { background:#d1ecf1; color:#0c5460; }
-        .status-delivered      { background:#d4edda; color:#155724; }
-        .status-failed         { background:#f8d7da; color:#721c24; }
-        .status-open           { background:#d4edda; color:#155724; }
-        .status-full           { background:#fff3cd; color:#856404; }
-        .status-assigned       { background:#cff4fc; color:#055160; }
-        .status-completed      { background:#d4edda; color:#155724; }
-
-        @media(max-width:768px) {
-            .sidebar { transform:translateX(-100%); transition:transform .3s; }
-            .sidebar.open { transform:translateX(0); }
-            .main-content { margin-left:0; }
+            margin-left: var(--sidebar-w);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
     </style>
 </head>
+
 <body>
 
-<aside class="sidebar" id="sidebar">
+    <aside class="sidebar" id="sidebar">
 
-    <a href="{{ route('driver.dashboard') }}" class="sidebar-brand">
-        🚛 AgriPool
-        <div style="font-size:.7rem;font-weight:400;color:#888;margin-top:2px;">
-            Driver Portal
-        </div>
-    </a>
-
-    <nav class="sidebar-nav">
-
-        <div class="sidebar-label">Main</div>
-
-        <a href="{{ route('driver.dashboard') }}"
-           class="nav-item-custom {{ request()->routeIs('driver.dashboard') ? 'active' : '' }}">
-            <span class="nav-icon">📊</span> Dashboard
-        </a>
-
-        <div class="sidebar-label">Deliveries</div>
-
-        <a href="{{ route('driver.pools.index') }}"
-           class="nav-item-custom {{ request()->routeIs('driver.pools.*') ? 'active' : '' }}">
-            <span class="nav-icon">🤝</span> Available Pools
-        </a>
-
-        <a href="{{ route('driver.deliveries.index') }}"
-           class="nav-item-custom {{ request()->routeIs('driver.deliveries.*') ? 'active' : '' }}">
-            <span class="nav-icon">📦</span> My Deliveries
-        </a>
-
-        <div class="sidebar-label">Account</div>
-
-        <a href="{{ route('driver.earnings.index') }}"
-           class="nav-item-custom {{ request()->routeIs('driver.earnings.*') ? 'active' : '' }}">
-            <span class="nav-icon">💰</span> Earnings
-        </a>
-
-        <a href="{{ route('driver.vehicle.index') }}"
-           class="nav-item-custom {{ request()->routeIs('driver.vehicle.*') ? 'active' : '' }}">
-            <span class="nav-icon">🚛</span> My Vehicle
-        </a>
-
-        <a href="{{ route('driver.profile.index') }}"
-           class="nav-item-custom {{ request()->routeIs('driver.profile.*') ? 'active' : '' }}">
-            <span class="nav-icon">👤</span> My Profile
-        </a>
-
-    </nav>
-
-    <div class="sidebar-footer">
-        <div class="d-flex align-items-center gap-2">
-            <div style="width:36px;height:36px;border-radius:50%;
-                background:var(--driver-blue);color:#fff;
-                display:flex;align-items:center;justify-content:center;
-                font-weight:700;font-size:.9rem;">
-                {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
-            </div>
-            <div style="overflow:hidden;">
-                <div style="font-size:.85rem;font-weight:600;
-                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                    {{ Auth::user()->name }}
+        <a href="{{ route('driver.dashboard') }}" class="sidebar-brand">
+            <div class="sidebar-brand-logo">
+                <div class="sidebar-brand-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="1" y="3" width="15" height="13" rx="2" />
+                        <path d="M16 8h4l3 5v3h-7V8z" />
+                        <circle cx="5.5" cy="18.5" r="2.5" />
+                        <circle cx="18.5" cy="18.5" r="2.5" />
+                    </svg>
                 </div>
-                <div style="font-size:.7rem;color:#888;">Driver Account</div>
+                <div>
+                    <div class="sidebar-brand-text">AgriPool</div>
+                    <div class="sidebar-brand-sub">Driver Portal</div>
+                </div>
             </div>
+        </a>
+
+        <nav class="sidebar-nav nav-dark">
+
+            <div class="sidebar-section-label">Overview</div>
+
+            <a href="{{ route('driver.dashboard') }}"
+                class="nav-item-custom {{ request()->routeIs('driver.dashboard') ? 'active' : '' }}">
+                <span class="nav-icon">
+                    <i data-lucide="layout-dashboard" width="16" height="16"></i>
+                </span>
+                Dashboard
+            </a>
+
+            <div class="sidebar-section-label">Deliveries</div>
+
+            <a href="{{ route('driver.pools.index') }}"
+                class="nav-item-custom {{ request()->routeIs('driver.pools.*') ? 'active' : '' }}">
+                <span class="nav-icon">
+                    <i data-lucide="map-pin" width="16" height="16"></i>
+                </span>
+                Available Pools
+            </a>
+
+            <a href="{{ route('driver.deliveries.index') }}"
+                class="nav-item-custom {{ request()->routeIs('driver.deliveries.*') ? 'active' : '' }}">
+                <span class="nav-icon">
+                    <i data-lucide="package" width="16" height="16"></i>
+                </span>
+                My Deliveries
+            </a>
+
+            <div class="sidebar-section-label">Account</div>
+
+            <a href="{{ route('driver.earnings.index') }}"
+                class="nav-item-custom {{ request()->routeIs('driver.earnings.*') ? 'active' : '' }}">
+                <span class="nav-icon">
+                    <i data-lucide="indian-rupee" width="16" height="16"></i>
+                </span>
+                Earnings
+            </a>
+
+            <a href="{{ route('driver.vehicle.index') }}"
+                class="nav-item-custom {{ request()->routeIs('driver.vehicle.*') ? 'active' : '' }}">
+                <span class="nav-icon">
+                    <i data-lucide="truck" width="16" height="16"></i>
+                </span>
+                My Vehicle
+            </a>
+
+            <a href="{{ route('driver.profile.index') }}"
+                class="nav-item-custom {{ request()->routeIs('driver.profile.*') ? 'active' : '' }}">
+                <span class="nav-icon">
+                    <i data-lucide="user-circle" width="16" height="16"></i>
+                </span>
+                My Profile
+            </a>
+
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <div class="user-avatar" style="background:#1d3557;">
+                    {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
+                </div>
+                <div style="overflow:hidden;flex:1;">
+                    <div style="font-size:.82rem;font-weight:600;
+                    color:#fff;white-space:nowrap;
+                    overflow:hidden;text-overflow:ellipsis;">
+                        {{ Auth::user()->name }}
+                    </div>
+                    <div style="font-size:.68rem;color:rgba(255,255,255,.35);">
+                        Driver Account
+                    </div>
+                </div>
+            </div>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="btn w-100 d-flex align-items-center
+                           justify-content-center gap-2" style="background:rgba(255,255,255,.06);
+                           color:rgba(255,255,255,.5);
+                           border:1px solid rgba(255,255,255,.08);
+                           border-radius:10px;font-size:.8rem;
+                           font-weight:500;padding:8px;
+                           transition:all 160ms ease;" onmouseover="this.style.background='rgba(239,68,68,.15)';
+                                 this.style.color='#ef4444';
+                                 this.style.borderColor='rgba(239,68,68,.3)'" onmouseout="this.style.background='rgba(255,255,255,.06)';
+                                this.style.color='rgba(255,255,255,.5)';
+                                this.style.borderColor='rgba(255,255,255,.08)'">
+                    <i data-lucide="log-out" width="14" height="14"></i>
+                    Sign Out
+                </button>
+            </form>
         </div>
-        <form method="POST" action="{{ route('logout') }}" class="mt-3">
-            @csrf
-            <button type="submit"
-                    class="btn btn-sm btn-outline-danger w-100"
-                    style="border-radius:8px;font-size:.8rem;">
-                🚪 Logout
-            </button>
-        </form>
-    </div>
 
-</aside>
+    </aside>
 
-<div class="main-content">
+    <div class="main-content">
 
-    <div class="topbar">
-        <div class="d-flex align-items-center gap-3">
-            <button class="btn btn-sm btn-outline-secondary d-md-none"
-                    onclick="document.getElementById('sidebar').classList.toggle('open')">
-                ☰
-            </button>
-            <div>
-                <h6 class="mb-0 fw-bold">@yield('page-title', 'Dashboard')</h6>
-                <small class="text-muted">@yield('page-subtitle', 'Driver Portal')</small>
+        <div class="topbar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-sm d-md-none" style="background:transparent;border:1px solid #e2e8f0;
+                           border-radius:8px;padding:6px 8px;" onclick="document.getElementById('sidebar')
+                             .classList.toggle('open')">
+                    <i data-lucide="menu" width="16" height="16"></i>
+                </button>
+                <div>
+                    <h6 class="mb-0 fw-bold" style="color:#1a1a2e;font-size:.95rem;">
+                        @yield('page-title', 'Dashboard')
+                    </h6>
+                    <p class="mb-0" style="font-size:.72rem;color:#94a3b8;">
+                        @yield('page-subtitle', 'Driver Portal')
+                    </p>
+                </div>
             </div>
+            <span style="font-size:.72rem;font-weight:600;color:#1d3557;
+            background:#eff6ff;padding:4px 10px;border-radius:20px;
+            border:1px solid rgba(29,53,87,.15);">
+                Driver
+            </span>
         </div>
-        <span class="badge rounded-pill"
-              style="background:var(--driver-pale);color:var(--driver-blue);">
-            🚛 Driver
-        </span>
+
+        <div class="px-4 pt-3">
+            @if(session('success'))
+                <div class="alert alert-success-premium alert-premium
+                            flash-message alert-dismissible d-flex
+                            align-items-center gap-2 mb-3">
+                    <i data-lucide="check-circle" width="16" height="16"></i>
+                    {{ session('success') }}
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"
+                        style="font-size:.7rem;"></button>
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="alert alert-danger-premium alert-premium
+                            flash-message alert-dismissible d-flex
+                            align-items-center gap-2 mb-3">
+                    <i data-lucide="alert-circle" width="16" height="16"></i>
+                    {{ session('error') }}
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"
+                        style="font-size:.7rem;"></button>
+                </div>
+            @endif
+            {{-- Global validation errors summary --}}
+            @if($errors->any())
+                <div class="alert alert-danger-premium alert-premium flash-message
+                    alert-dismissible mb-3">
+                    <div class="d-flex align-items-start gap-2">
+                        <i data-lucide="alert-circle" width="16" height="16" style="flex-shrink:0;margin-top:1px;"></i>
+                        <div>
+                            <div class="fw-semibold small mb-1">
+                                Please fix the following errors:
+                            </div>
+                            <ul class="mb-0 ps-3" style="font-size:.82rem;">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"
+                        style="font-size:.7rem;"></button>
+                </div>
+            @endif
+        </div>
+
+        <div class="page-content">
+            @yield('content')
+        </div>
+
     </div>
 
-    <div class="px-4 pt-3">
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show rounded-3">
-                ✅ {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-        @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show rounded-3">
-                ❌ {{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-    </div>
-
-    <div class="page-content">
-        @yield('content')
-    </div>
-
-</div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            lucide.createIcons();
+        });
+    </script>
     @stack('scripts')
 </body>
+
 </html>

@@ -41,6 +41,13 @@ Route::get('/', [PublicController::class, 'index'])->name('home');
 Route::get('/contact', [PublicController::class, 'contact'])->name('contact');
 Route::post('/contact', [PublicController::class, 'submitContact'])
     ->name('contact.submit');
+// Locale switcher
+Route::get('/locale/{locale}', function (string $locale) {
+    if (in_array($locale, ['en', 'hi'])) {
+        session(['locale' => $locale]);
+    }
+    return back();
+})->name('locale.switch');
 
 // ============================================================
 // AUTH ROUTES — Provided by Breeze

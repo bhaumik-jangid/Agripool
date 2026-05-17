@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'welcome'            => 'Welcome back, :name',
+    'dashboard'          => 'Dashboard',
+    'transport_requests' => 'Transport Requests',
+    'create_request'     => 'Create New Request',
+    'browse_pools'       => 'Browse Pools',
+    'delivery_history'   => 'Delivery History',
+    'notifications'      => 'Notifications',
+    'my_profile'         => 'My Profile',
+    'total_requests'     => 'Total Requests',
+    'active_requests'    => 'Active Requests',
+    'delivered'          => 'Delivered',
+    'sign_out'           => 'Sign Out',
+    'crop_type'          => 'Crop Type',
+    'quantity'           => 'Quantity',
+    'destination'        => 'Destination Market',
+    'pickup_date'        => 'Pickup Date',
+    'status'             => 'Status',
+    'actions'            => 'Actions',
+    'payment_due'        => 'Payment Due',
+    'pay_now'            => 'Pay Now',
+    'track_shipment'     => 'Track Shipment',
+    'rate_driver'        => 'Rate Driver',
+    'join_pool'          => 'Join Pool',
+    'leave_pool'         => 'Leave Pool',
+];
