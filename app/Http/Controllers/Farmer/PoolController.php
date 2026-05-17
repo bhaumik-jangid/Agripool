@@ -18,21 +18,22 @@ class PoolController extends Controller
 
         // Show pending requests (not yet in any pool)
         $myPendingRequests = TransportRequest::where('user_id', $user->id)
-                                ->where('status', 'pending')
-                                ->get();
+            ->where('status', 'pending')
+            ->get();
 
         // Show all open pools with at least one member
         $pools = Pool::where('status', 'open')
-                     ->where('pickup_date', '>=', now()->toDateString())
-                     ->whereHas('members')
-                     ->whereNull('driver_id')
-                     ->orderBy('pickup_date', 'asc')
-                     ->paginate(9);
+            ->where('pickup_date', '>=', now()->toDateString())
+            ->whereHas('members')
+            ->whereNull('driver_id')
+            ->orderBy('pickup_date', 'asc')
+            ->with(['members.farmer', 'members.transportRequest'])
+            ->paginate(9);
 
         // Pools this farmer has already joined
         $myPoolIds = PoolMember::where('user_id', $user->id)
-                               ->pluck('pool_id')
-                               ->toArray();
+            ->pluck('pool_id')
+            ->toArray();
 
         return view('farmer.pools.index', compact(
             'pools',
@@ -60,24 +61,26 @@ class PoolController extends Controller
         }
 
         $alreadyJoined = PoolMember::where('pool_id', $pool->id)
-                                   ->where('user_id', Auth::id())
-                                   ->exists();
+            ->where('user_id', Auth::id())
+            ->exists();
         if ($alreadyJoined) {
             return back()->with('error', 'You are already in this pool.');
         }
 
         if ($pool->availableCapacity() < $transportRequest->quantity_kg) {
-            return back()->with('error',
+            return back()->with(
+                'error',
                 'Not enough space in this pool for your cargo ('
                 . number_format($transportRequest->quantity_kg) . 'kg needed, '
-                . number_format($pool->availableCapacity()) . 'kg available).');
+                . number_format($pool->availableCapacity()) . 'kg available).'
+            );
         }
 
         PoolMember::create([
-            'pool_id'              => $pool->id,
+            'pool_id' => $pool->id,
             'transport_request_id' => $transportRequest->id,
-            'user_id'              => Auth::id(),
-            'joined_at'            => now(),
+            'user_id' => Auth::id(),
+            'joined_at' => now(),
         ]);
 
         $pool->increment('used_capacity_kg', $transportRequest->quantity_kg);
@@ -97,8 +100,8 @@ class PoolController extends Controller
     public function leave(Request $request, Pool $pool)
     {
         $member = PoolMember::where('pool_id', $pool->id)
-                            ->where('user_id', Auth::id())
-                            ->firstOrFail();
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
 
         $transportRequest = TransportRequest::find(
             $member->transport_request_id
@@ -120,8 +123,10 @@ class PoolController extends Controller
         $service = new PoolMatchingService();
         $service->recalculateCostShares($pool);
 
-        return back()->with('success',
+        return back()->with(
+            'success',
             'You have left the pool. Your request is now pending — '
-            . 'you can rejoin a pool or create a new one.');
+            . 'you can rejoin a pool or create a new one.'
+        );
     }
 }

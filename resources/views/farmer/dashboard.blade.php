@@ -5,6 +5,58 @@
 
 @section('content')
 
+{{-- Payment due alert --}}
+@php
+    $pendingPayments = Auth::user()->transportRequests()
+        ->where('status', 'delivered')
+        ->whereHas('poolMember', fn($q) => $q->where('cost_paid', false))
+        ->with('poolMember')
+        ->get();
+@endphp
+
+@if($pendingPayments->count() > 0)
+    <div class="alert rounded-4 mb-4"
+         style="background:#fff3cd;border:2px solid #ffc107;color:#7a5f00;">
+        <div class="d-flex align-items-start gap-3">
+            <span style="font-size:2rem;flex-shrink:0;">💳</span>
+            <div class="flex-grow-1">
+                <div class="fw-bold mb-1">
+                    Payment Pending —
+                    {{ $pendingPayments->count() }}
+                    delivery/deliveries awaiting payment
+                </div>
+                @foreach($pendingPayments as $req)
+                    <div class="d-flex align-items-center
+                                justify-content-between p-2 rounded-3 mb-1"
+                         style="background:rgba(255,255,255,.6);">
+                        <div class="small">
+                            <strong>{{ $req->crop_type }}</strong>
+                            → {{ $req->destination_market }}
+                            <span class="text-danger fw-bold ms-2">
+                                ₹{{ number_format(
+                                    $req->poolMember->cost_share ?? 0, 2) }}
+                                due
+                            </span>
+                        </div>
+                        <a href="{{ route('farmer.requests.show', $req) }}"
+                           class="btn btn-sm fw-semibold"
+                           style="background:#ffc107;color:#000;
+                                  border-radius:8px;font-size:.75rem;
+                                  white-space:nowrap;">
+                            Pay Now →
+                        </a>
+                    </div>
+                @endforeach
+                <div style="font-size:.75rem;margin-top:4px;color:#856404;">
+                    ⚠️ Please pay your driver promptly.
+                    Timely payment builds trust and ensures
+                    continued service.
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
+
 {{-- Stats Row --}}
 <div class="row g-4 mb-4">
 
@@ -66,6 +118,49 @@
                style="color:#2d6a4f;font-weight:600;">Update Profile →</a>
         </div>
     </div>
+@endif
+
+{{-- Active price proposals that need farmer's vote --}}
+@if($activeProposals->count() > 0)
+    @foreach($activeProposals as $proposal)
+        @php
+            $myVote = $proposal->getVote(Auth::id());
+        @endphp
+        @if(!$myVote)
+            <div class="alert rounded-4 mb-3 d-flex align-items-center
+                        justify-content-between gap-3"
+                 style="background:#fff8e1;border:2px solid #ffe082;
+                        color:#7a5f00;">
+                <div class="d-flex align-items-center gap-3">
+                    <span style="font-size:1.8rem;">💬</span>
+                    <div>
+                        <div class="fw-bold">
+                            Driver Price Proposal — Action Required
+                        </div>
+                        <div class="small">
+                            <strong>{{ $proposal->driver->name }}</strong>
+                            proposed
+                            <strong>
+                                ₹{{ number_format($proposal->proposed_cost, 0) }}
+                            </strong>
+                            for your pool going to
+                            <strong>
+                                {{ $proposal->pool->destination_market }}
+                            </strong>.
+                            Expires
+                            {{ $proposal->expires_at->diffForHumans() }}.
+                        </div>
+                    </div>
+                </div>
+                <a href="{{ route('farmer.proposals.show', $proposal) }}"
+                   class="btn fw-bold text-white flex-shrink-0"
+                   style="background:#e67e00;border-radius:10px;
+                          white-space:nowrap;">
+                    Vote Now →
+                </a>
+            </div>
+        @endif
+    @endforeach
 @endif
 
 <div class="row g-4">

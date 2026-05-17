@@ -17,14 +17,18 @@ class PoolMember extends Model
         'cost_share',
         'cost_paid',
         'payment_method',
+        'driver_rating',
+        'rating_comment',
+        'has_rated',
         'joined_at',
     ];
 
     protected $casts = [
-        'cost_paid' => 'boolean',
-        'joined_at' => 'datetime',
+        'cost_paid'     => 'boolean',
+        'has_rated'     => 'boolean',
+        'joined_at'     => 'datetime',
         'share_percentage' => 'decimal:2',
-        'cost_share' => 'decimal:2',
+        'cost_share'    => 'decimal:2',
     ];
 
     public function pool()

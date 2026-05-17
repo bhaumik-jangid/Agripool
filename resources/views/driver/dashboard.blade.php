@@ -75,6 +75,30 @@
         </div>
     </div>
 
+    <div class="col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span style="font-size:1.8rem;">⭐</span>
+                <span class="badge" style="background:#fff3cd;color:#856404;">
+                    Rating
+                </span>
+            </div>
+            <div class="stat-num" style="color:#f4a261;">
+                {{ number_format($driverProfile->rating ?? 0, 1) }}
+                <span style="font-size:1rem;color:#aaa;">/ 5</span>
+            </div>
+            <div class="text-muted small mt-1">Average Rating</div>
+
+            {{-- Star display --}}
+            <div style="margin-top:6px;">
+                @for($i = 1; $i <= 5; $i++)
+                    <span style="color:{{ $i <= round($driverProfile->rating ?? 0)
+                        ? '#f4a261' : '#dee2e6' }};font-size:.9rem;">★</span>
+                @endfor
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <div class="row g-4">

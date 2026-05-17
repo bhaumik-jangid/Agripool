@@ -39,11 +39,14 @@ class PoolMatchingService
                 $request->preferred_pickup_date->copy()->subDay(),
                 $request->preferred_pickup_date->copy()->addDay(),
             ])
+            // Only pools with enough remaining space
             ->whereRaw(
                 '(total_capacity_kg - used_capacity_kg) >= ?',
                 [$request->quantity_kg]
             )
             ->whereNull('driver_id')
+            ->whereHas('members') // Must have at least one farmer
+            ->orderByRaw('(total_capacity_kg - used_capacity_kg) ASC') // Tightest fit first
             ->first();
     }
 

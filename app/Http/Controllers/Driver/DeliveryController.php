@@ -95,6 +95,19 @@ class DeliveryController extends Controller
                     'type'    => 'delivery_completed',
                     'link'    => '/farmer/history',
                 ]);
+
+                // Notify each farmer — with payment reminder
+                Notification::create([
+                    'user_id' => $member->user_id,
+                    'title'   => '🎉 Delivery Complete — Payment Due!',
+                    'message' => 'Your produce has been successfully delivered to '
+                                . $shipment->pool->destination_market
+                                . '. Please confirm your payment of ₹'
+                                . number_format($member->cost_share ?? 0, 2)
+                                . ' to your driver. Go to My Requests → View → Payment.',
+                    'type'    => 'payment_due',
+                    'link'    => '/farmer/requests/' . $member->transport_request_id,
+                ]);
             }
 
             // Create earnings record for driver

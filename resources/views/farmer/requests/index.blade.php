@@ -26,6 +26,7 @@
                             <th style="font-size:.8rem;color:#888;font-weight:600;">DESTINATION</th>
                             <th style="font-size:.8rem;color:#888;font-weight:600;">PICKUP DATE</th>
                             <th style="font-size:.8rem;color:#888;font-weight:600;">STATUS</th>
+                            <th style="font-size:.8rem;color:#888;font-weight:600;">RATING</th>
                             <th style="font-size:.8rem;color:#888;font-weight:600;">ACTIONS</th>
                         </tr>
                     </thead>
@@ -70,6 +71,30 @@
                                         <div style="font-size:.7rem;color:#2d6a4f;margin-top:3px;">
                                             Pool: {{ $req->poolMember->pool->pool_code ?? '' }}
                                         </div>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($req->status === 'delivered')
+                                        @php
+                                            $member = $req->poolMember;
+                                            $shipment = $member?->pool?->shipment;
+                                        @endphp
+                                        @if($member && !$member->has_rated && $shipment)
+                                            <a href="{{ route('farmer.rate', $shipment->id) }}"
+                                            class="btn btn-sm"
+                                            style="background:#f4a261;color:#fff;
+                                                    border-radius:8px;font-size:.75rem;">
+                                                ⭐ Rate
+                                            </a>
+                                        @elseif($member && $member->has_rated)
+                                            <div style="color:#f4a261;font-size:.85rem;">
+                                                @for($i = 1; $i <= 5; $i++)
+                                                    {{ $i <= $member->driver_rating ? '★' : '☆' }}
+                                                @endfor
+                                            </div>
+                                        @endif
+                                    @else
+                                        <span class="text-muted small">—</span>
                                     @endif
                                 </td>
                                 <td>

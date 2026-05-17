@@ -5,6 +5,29 @@
 
 @section('content')
 
+{{-- Payment due sticky reminder --}}
+@php
+    $unpaidCount = Auth::user()->transportRequests()
+        ->where('status', 'delivered')
+        ->whereHas('poolMember', fn($q) => $q->where('cost_paid', false))
+        ->count();
+@endphp
+
+@if($unpaidCount > 0)
+    <div class="alert rounded-3 mb-4 d-flex align-items-center gap-3"
+         style="background:#fff3cd;border:1px solid #ffc107;color:#7a5f00;">
+        <span style="font-size:1.5rem;">💳</span>
+        <div>
+            <strong>{{ $unpaidCount }} payment(s) pending.</strong>
+            You have unpaid deliveries.
+            <a href="{{ route('farmer.dashboard') }}"
+               style="color:#2d6a4f;font-weight:700;">
+                View Dashboard →
+            </a>
+        </div>
+    </div>
+@endif
+
 <div class="content-card">
 
     <div class="d-flex justify-content-between align-items-center mb-4">

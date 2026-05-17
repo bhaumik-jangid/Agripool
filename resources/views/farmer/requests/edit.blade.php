@@ -70,72 +70,90 @@
             </div>
         </div>
 
-        {{-- Pickup Details --}}
+        {{-- Section: Pickup Details --}}
         <div class="mb-4 pb-4" style="border-bottom:1px solid #f0f0f0;">
             <h6 class="fw-bold mb-3" style="color:#2d6a4f;">📍 Pickup Details</h6>
             <div class="row g-3">
 
                 <div class="col-12">
-                    <label class="form-label fw-semibold small">Pickup Location *</label>
+                    <label class="form-label fw-semibold small">
+                        Pickup Location / Village *
+                    </label>
                     <input type="text" name="pickup_location"
-                           class="form-control @error('pickup_location') is-invalid @enderror"
-                           value="{{ old('pickup_location', $transportRequest->pickup_location) }}">
+                        class="form-control
+                                @error('pickup_location') is-invalid @enderror"
+                        value="{{ old('pickup_location') }}"
+                        placeholder="Village name, landmark">
                     @error('pickup_location')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Pickup District *</label>
-                    <input type="text" name="pickup_district"
-                           class="form-control @error('pickup_district') is-invalid @enderror"
-                           value="{{ old('pickup_district', $transportRequest->pickup_district) }}">
+                    <label class="form-label fw-semibold small">
+                        Pickup District *
+                    </label>
+                    <select name="pickup_district"
+                            id="pickupDistrict"
+                            class="form-select
+                                @error('pickup_district') is-invalid @enderror"
+                            onchange="onPickupDistrictChange(); updateCostEstimate();"
+                            required>
+                        <option value="">Select district</option>
+                        @foreach(\App\Data\DistrictData::getDistrictNames() as $d)
+                            <option value="{{ $d }}"
+                                {{ old('pickup_district') == $d ? 'selected' : '' }}>
+                                {{ $d }}
+                            </option>
+                        @endforeach
+                    </select>
                     @error('pickup_district')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
+                {{-- State: hidden input + read-only display --}}
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Pickup State *</label>
-                    <select name="pickup_state"
-                            class="form-select @error('pickup_state') is-invalid @enderror">
-                        @foreach(['Gujarat','Maharashtra','Rajasthan','Madhya Pradesh',
-                                  'Uttar Pradesh','Punjab','Haryana','Karnataka',
-                                  'Andhra Pradesh','Tamil Nadu','Other'] as $state)
-                            <option value="{{ $state }}"
-                                {{ old('pickup_state', $transportRequest->pickup_state) == $state
-                                   ? 'selected' : '' }}>
-                                {{ $state }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('pickup_state')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                    <label class="form-label fw-semibold small">State</label>
+                    <input type="text"
+                        id="pickupStateDisplay"
+                        class="form-control"
+                        value="{{ old('pickup_state', 'Select district first') }}"
+                        readonly
+                        style="background:#f8f9fa;color:#6c757d;">
+                    {{-- Hidden input that actually submits --}}
+                    <input type="hidden"
+                        name="pickup_state"
+                        id="pickupState"
+                        value="{{ old('pickup_state', 'Gujarat') }}">
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Preferred Pickup Date *</label>
+                    <label class="form-label fw-semibold small">
+                        Preferred Pickup Date *
+                    </label>
                     <input type="date" name="preferred_pickup_date"
-                           class="form-control @error('preferred_pickup_date') is-invalid @enderror"
-                           value="{{ old('preferred_pickup_date',
-                               $transportRequest->preferred_pickup_date->format('Y-m-d')) }}">
+                        class="form-control
+                                @error('preferred_pickup_date') is-invalid @enderror"
+                        value="{{ old('preferred_pickup_date') }}"
+                        min="{{ now()->addDay()->format('Y-m-d') }}">
                     @error('preferred_pickup_date')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Preferred Pickup Time</label>
+                    <label class="form-label fw-semibold small">
+                        Preferred Pickup Time
+                    </label>
                     <select name="preferred_pickup_time" class="form-select">
                         <option value="">Any time</option>
                         @foreach(['06:00 AM','07:00 AM','08:00 AM','09:00 AM',
-                                  '10:00 AM','11:00 AM','12:00 PM','01:00 PM',
-                                  '02:00 PM','03:00 PM','04:00 PM','05:00 PM'] as $t)
+                                '10:00 AM','11:00 AM','12:00 PM','01:00 PM',
+                                '02:00 PM','03:00 PM','04:00 PM','05:00 PM'] as $t)
                             <option value="{{ $t }}"
-                                {{ old('preferred_pickup_time',
-                                   $transportRequest->preferred_pickup_time) == $t
-                                   ? 'selected' : '' }}>
+                                {{ old('preferred_pickup_time') == $t
+                                ? 'selected' : '' }}>
                                 {{ $t }}
                             </option>
                         @endforeach
@@ -145,28 +163,44 @@
             </div>
         </div>
 
-        {{-- Destination --}}
+        {{-- Section: Destination --}}
         <div class="mb-4 pb-4" style="border-bottom:1px solid #f0f0f0;">
             <h6 class="fw-bold mb-3" style="color:#2d6a4f;">🏪 Destination Market</h6>
             <div class="row g-3">
 
                 <div class="col-md-8">
-                    <label class="form-label fw-semibold small">Market Name *</label>
+                    <label class="form-label fw-semibold small">
+                        Market Name *
+                    </label>
                     <input type="text" name="destination_market"
-                           class="form-control @error('destination_market') is-invalid @enderror"
-                           value="{{ old('destination_market',
-                               $transportRequest->destination_market) }}">
+                        class="form-control
+                                @error('destination_market') is-invalid @enderror"
+                        value="{{ old('destination_market') }}"
+                        placeholder="e.g. Ahmedabad APMC Market">
                     @error('destination_market')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold small">Destination District *</label>
-                    <input type="text" name="destination_district"
-                           class="form-control @error('destination_district') is-invalid @enderror"
-                           value="{{ old('destination_district',
-                               $transportRequest->destination_district) }}">
+                    <label class="form-label fw-semibold small">
+                        Destination District *
+                    </label>
+                    <select name="destination_district"
+                            id="destinationDistrict"
+                            class="form-select
+                                @error('destination_district') is-invalid @enderror"
+                            onchange="updateCostEstimate()"
+                            required>
+                        <option value="">Select district</option>
+                        @foreach(\App\Data\DistrictData::getDistrictNames() as $d)
+                            <option value="{{ $d }}"
+                                {{ old('destination_district') == $d
+                                ? 'selected' : '' }}>
+                                {{ $d }}
+                            </option>
+                        @endforeach
+                    </select>
                     @error('destination_district')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -199,5 +233,70 @@
 </div>
 </div>
 </div>
+
+@push('scripts')
+<script>
+// District data passed from Laravel
+const districts = @json(\App\Data\DistrictData::$districts);
+const RATE         = 12.0;
+const TRUCK_TONNES = 5.0;
+
+// When pickup district changes — auto fill state
+function onPickupDistrictChange() {
+    const district = document.getElementById('pickupDistrict').value;
+    const state    = districts[district]
+                     ? districts[district].state
+                     : '';
+    document.getElementById('pickupStateDisplay').value =
+        state || 'Select district first';
+    document.getElementById('pickupState').value = state || 'Gujarat';
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+    const R    = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a    = Math.sin(dLat/2) * Math.sin(dLat/2)
+               + Math.cos(lat1 * Math.PI/180)
+               * Math.cos(lat2 * Math.PI/180)
+               * Math.sin(dLon/2) * Math.sin(dLon/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function updateCostEstimate() {
+    const from = document.getElementById('pickupDistrict').value;
+    const to   = document.getElementById('destinationDistrict').value;
+
+    if (!from || !to) {
+        document.getElementById('costEstimateBox').style.display = 'none';
+        return;
+    }
+
+    if (!districts[from] || !districts[to]) return;
+
+    const dist     = haversine(
+        districts[from].lat, districts[from].lng,
+        districts[to].lat,   districts[to].lng
+    );
+    const fullCost = Math.max(dist * TRUCK_TONNES * RATE, 500);
+
+    document.getElementById('estDistance').textContent =
+        Math.round(dist) + ' km';
+    document.getElementById('estFullCost').textContent =
+        '₹' + fullCost.toFixed(0);
+    document.getElementById('estSharedCost').textContent =
+        '~₹' + (fullCost * 0.3).toFixed(0)
+        + ' – ₹' + (fullCost * 0.5).toFixed(0);
+
+    document.getElementById('costEstimateBox').style.display = 'block';
+}
+
+// Auto-fill on page load if old() values exist
+document.addEventListener('DOMContentLoaded', function() {
+    onPickupDistrictChange();
+    updateCostEstimate();
+});
+</script>
+@endpush
 
 @endsection

@@ -185,6 +185,28 @@
                     </div>
                 @endif
 
+                {{-- Tracking link if shipment exists --}}
+                @php
+                    $poolMember = $transportRequest->poolMember;
+                    $pool       = $poolMember?->pool;
+                    $shipment   = $pool?->shipment;
+                @endphp
+
+                @if($shipment && in_array($transportRequest->status,
+                    ['assigned', 'in_transit', 'cargo_loaded', 'delivered']))
+                    <div class="mb-3">
+                        <a href="{{ route('farmer.track', $shipment->tracking_code) }}"
+                        class="btn w-100 fw-semibold text-white"
+                        style="background:#2d6a4f;border-radius:10px;">
+                            📍 Track My Shipment
+                        </a>
+                        <div class="text-center mt-1"
+                            style="font-size:.72rem;color:#888;">
+                            Tracking: {{ $shipment->tracking_code }}
+                        </div>
+                    </div>
+                @endif
+
                 <hr>
                 <a href="{{ route('farmer.requests.index') }}" class="btn btn-outline-secondary w-100"
                     style="border-radius:10px;">

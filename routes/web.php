@@ -12,6 +12,8 @@ use App\Http\Controllers\Farmer\PoolController;
 use App\Http\Controllers\Farmer\NotificationController;
 use App\Http\Controllers\Farmer\ProfileController;
 use App\Http\Controllers\Farmer\HistoryController;
+use App\Http\Controllers\Farmer\ProposalController;
+use App\Http\Controllers\Farmer\RatingController;
 
 // Controllers — Driver
 use App\Http\Controllers\Driver\DriverDashboardController;
@@ -20,6 +22,7 @@ use App\Http\Controllers\Driver\DeliveryController;
 use App\Http\Controllers\Driver\EarningsController;
 use App\Http\Controllers\Driver\VehicleController;
 use App\Http\Controllers\Driver\DriverProfileController;
+use App\Http\Controllers\Driver\PriceProposalController;
 
 // Controllers — Admin
 use App\Http\Controllers\Admin\AdminDashboardController;
@@ -114,6 +117,27 @@ Route::prefix('farmer')
         Route::put('/profile', [ProfileController::class, 'update'])
             ->name('profile.update');
 
+        // Price proposals — farmer votes
+        Route::get('/pools/proposals/{proposal}',
+            [ProposalController::class, 'show'])
+            ->name('proposals.show');
+        Route::post('/pools/proposals/{proposal}/vote',
+            [\App\Http\Controllers\Driver\PriceProposalController::class, 'vote'])
+            ->name('proposals.vote');
+
+        // Shipment tracking
+            Route::get('/track/{trackingCode}',
+                [HistoryController::class, 'track'])
+                ->name('track');
+
+        // Driver rating
+        Route::get('/rate/{shipment}',
+            [RatingController::class, 'show'])
+            ->name('rate');
+        Route::post('/rate/{shipment}',
+            [RatingController::class, 'store'])
+            ->name('rate.store');
+
     });
 
 // ============================================================
@@ -163,6 +187,11 @@ Route::prefix('driver')
         Route::put('/profile', [DriverProfileController::class, 'update'])
             ->name('profile.update');
 
+        
+        Route::post('/pools/{pool}/propose',
+            [PriceProposalController::class, 'propose'])
+            ->name('pools.propose');
+
     });
 
 // ============================================================
@@ -198,6 +227,11 @@ Route::prefix('admin')
             [DriverManagementController::class, 'reject']
         )
             ->name('drivers.reject');
+
+        // Vehicle requests
+        Route::post('/vehicles/{vehicle}/verify',
+            [DriverManagementController::class, 'verifyVehicle'])
+            ->name('vehicles.verify');
 
         // Transport requests
         Route::get('/requests', [RequestManagementController::class, 'index'])
