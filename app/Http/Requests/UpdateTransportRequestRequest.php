@@ -40,15 +40,15 @@ class UpdateTransportRequestRequest extends FormRequest
         ];
     }
 
-    protected function passedValidation(): void
-    {
-        if ($this->preferred_pickup_time) {
-            $this->merge([
-                'preferred_pickup_time' => date(
-                    'H:i:s',
-                    strtotime($this->preferred_pickup_time)
-                ),
-            ]);
-        }
-    }
+    // protected function passedValidation(): void
+    // {
+    //     if ($this->preferred_pickup_time) {
+    //         $this->merge([
+    //             'preferred_pickup_time' => date(
+    //                 'H:i:s',
+    //                 strtotime($this->preferred_pickup_time)
+    //             ),
+    //         ]);
+    //     }
+    // }
 }

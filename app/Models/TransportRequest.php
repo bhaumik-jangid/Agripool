@@ -21,6 +21,7 @@ class TransportRequest extends Model
         'pickup_longitude',
         'destination_market',
         'destination_district',
+        'destination_state',      // ← confirm this exists
         'preferred_pickup_date',
         'preferred_pickup_time',
         'estimated_cost',

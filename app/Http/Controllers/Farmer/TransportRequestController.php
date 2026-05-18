@@ -33,8 +33,15 @@ class TransportRequestController extends Controller
     // Like: POST /api/requests in Express
     public function store(StoreTransportRequestRequest $request)
     {
-        // $request is already validated — no manual validate() needed
         $validated = $request->validated();
+
+        // Convert 12-hour time format to 24-hour for MySQL TIME column
+        if (!empty($validated['preferred_pickup_time'])) {
+            $validated['preferred_pickup_time'] = date(
+                'H:i:s',
+                strtotime($validated['preferred_pickup_time'])
+            );
+        }
 
         $validated['user_id'] = Auth::id();
         $validated['status'] = 'pending';
@@ -164,13 +171,20 @@ class TransportRequestController extends Controller
 
         if (!$transportRequest->isEditable()) {
             return redirect()->route('farmer.requests.index')
-                ->with(
-                    'error',
-                    'This request cannot be edited.'
-                );
+                ->with('error', 'This request cannot be edited.');
         }
 
-        $transportRequest->update($request->validated());
+        $validated = $request->validated();
+
+        // Convert 12-hour time format to 24-hour for MySQL
+        if (!empty($validated['preferred_pickup_time'])) {
+            $validated['preferred_pickup_time'] = date(
+                'H:i:s',
+                strtotime($validated['preferred_pickup_time'])
+            );
+        }
+
+        $transportRequest->update($validated);
 
         return redirect()->route('farmer.requests.index')
             ->with('success', 'Request updated successfully!');

@@ -101,17 +101,17 @@ class StoreTransportRequestRequest extends FormRequest
         ];
     }
 
-    // Run after validation passes
-    protected function passedValidation(): void
-    {
-        // Convert 12-hour time to 24-hour for MySQL
-        if ($this->preferred_pickup_time) {
-            $this->merge([
-                'preferred_pickup_time' => date(
-                    'H:i:s',
-                    strtotime($this->preferred_pickup_time)
-                ),
-            ]);
-        }
-    }
+    // // Run after validation passes
+    // protected function passedValidation(): void
+    // {
+    //     // Convert 12-hour time to 24-hour for MySQL
+    //     if ($this->preferred_pickup_time) {
+    //         $this->merge([
+    //             'preferred_pickup_time' => date(
+    //                 'H:i:s',
+    //                 strtotime($this->preferred_pickup_time)
+    //             ),
+    //         ]);
+    //     }
+    // }
 }
