@@ -13,7 +13,7 @@
     {{-- ══════════════════════════════════════════
          NAVBAR
     ══════════════════════════════════════════ --}}
-    <nav class="navbar navbar-expand-lg navbar-agripool fixed-top" id="mainNavbar">
+    <!-- <nav class="navbar navbar-expand-lg navbar-agripool fixed-top" id="mainNavbar">
         <div class="container">
 
             <a class="navbar-brand navbar-brand-text text-decoration-none" href="{{ route('home') }}">
@@ -62,7 +62,7 @@
                 </div>
             </div>
         </div>
-    </nav>
+    </nav> -->
 
     {{-- Page content --}}
     @yield('content')
